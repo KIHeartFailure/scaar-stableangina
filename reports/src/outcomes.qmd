@@ -1,0 +1,298 @@
+```{r}
+#| label: outcomesfunc
+#| cache: true
+#| cache.comments: false
+
+vars_crr <- names(sdata)
+modvars_crr <- vars_crr[str_detect(vars_crr, paste0(paste0(modvars, "_cr_"), collapse = "|"))]
+coxvars <- modvars
+coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+
+outcomesfunc_inner <- function(data = sdata, time, event, eventname, xvar = "case",
+                               fg = T, novar = NULL) {
+  levs <- levels(data %>% pull(!!sym(xvar)))
+  nlevs <- length(levs)
+
+  nrows <- if_else(fg, 5, 3)
+  out <- data.frame(matrix(NA, ncol = 2 + nlevs, nrow = nrows))
+  colnames(out) <- c("Outcome", "Model", levs)
+
+  out[1, 1] <- eventname
+
+  ## incidence rate
+  out[1, 2] <- "No events, sum py, incidence/100py (95% CI)"
+
+  # 1 row - incidence
+  ev <- data %>%
+    group_by(!!sym(xvar)) %>%
+    summarise(
+      ev = sum(!!sym(event) == "Yes"),
+      s = sum(!!sym(time) / 365.25),
+      .groups = "drop"
+    )
+  r <- pois.exact(x = ev$ev, pt = ev$s / 100)
+
+  out[1, 3:(nlevs + 2)] <- paste0(
+    ev$ev, ", ",
+    fn(ev$s, dig = 0), ", ",
+    fn(r$rate, dig = 0), " (",
+    fn(r$lower, dig = 0), "-",
+    fn(r$upper, dig = 0), ")"
+  )
+
+  ## 2 row - crude regression
+  out[2, 2] <- "Crude Hazard Ratio (95% CI), p-value"
+  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ ", xvar, " + frailty(lopnrcase)")),
+    data = data
+  ))
+
+  out[2, 3:4] <- c(
+    "reference",
+    paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  )
+
+  ## 3 row - adjusted regression
+  out[3, 2] <- "Adjusted Hazard Ratio (95% CI), p-value"
+  coxvars2 <- setdiff(coxvars, novar)
+  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+", paste(coxvars2, collapse = " + "), "+ frailty(lopnrcase)")),
+    data = data
+  ))
+
+  out[3, 3:4] <- c(
+    "reference",
+    paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  )
+
+  if (fg) {
+    out[4, 2] <- "Crude Sub-distributional Hazard Ratio (95% CI), p-value"
+    mod <- summary(crr(
+      ftime = data %>% pull(!!sym(time)),
+      fstatus = data %>% pull(!!sym(paste0(event, "_cr"))),
+      cov1 = data %>% select(starts_with(paste0(xvar, "_cr_"))),
+      failcode = 1,
+      cencode = 0
+    ))
+
+    out[4, 3:4] <- c(
+      "reference",
+      paste0(
+        fn(mod$coef[, "exp(coef)"], dig = 2),
+        " (",
+        fn(exp(mod$coef[, "coef"] - global_z05 * mod$coef[, "se(coef)"]), dig = 2),
+        "-",
+        fn(exp(mod$coef[, "coef"] + global_z05 * mod$coef[, "se(coef)"]), dig = 2), "), ",
+        fn(mod$coef[, "p-value"], dig = 3, p = TRUE)
+      )
+    )
+
+    out[5, 2] <- "Adjusted Sub-distributional Hazard Ratio (95% CI), p-value"
+    if (!is.null(novar)) {
+      modvars_crr2 <- modvars_crr[!str_detect(modvars_crr, novar)]
+    } else {
+      modvars_crr2 <- modvars_crr
+    }
+    modvars_crr2 <- c(vars_crr[str_detect(vars_crr, paste0(xvar, "_cr_"))], modvars_crr2)
+    # mod <- summary(crr(
+    #   ftime = data %>% pull(!!sym(time)),
+    #   fstatus = data %>% pull(!!sym(paste0(event, "_cr"))),
+    #   cov1 = data %>% select(starts_with(modvars_crr2)),
+    #   failcode = 1,
+    #   cencode = 0
+    # ))
+    # out[4, 3:4] <- c(
+    #   "reference",
+    #   paste0(
+    #     fn(mod$coef[1, "exp(coef)"], dig = 2),
+    #     " (",
+    #     fn(exp(mod$coef[1, "coef"] - global_z05 * mod$coef[, "se(coef)"]), dig = 2),
+    #     "-",
+    #     fn(exp(mod$coef[1, "coef"] + global_z05 * mod$coef[, "se(coef)"]), dig = 2), "), ",
+    #     fn(mod$coef[1, "p-value"], dig = 3, p = TRUE)
+    #   )
+    # )
+  }
+  return(out)
+}
+
+outcomesfunc <- function(data, novar = NULL, fgall = F) {
+  out1 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[1],
+    event = outvars$var[1],
+    eventname = outvars$name[1],
+    fg = fgall,
+    novar = novar
+  )
+  out2 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[2],
+    event = outvars$var[2],
+    eventname = outvars$name[2],
+    novar = novar,
+    fg = F
+  )
+  out3 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[3],
+    event = outvars$var[3],
+    eventname = outvars$name[3],
+    novar = novar,
+    fg = F
+  )
+  out4 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[4],
+    event = outvars$var[4],
+    eventname = outvars$name[4],
+    novar = novar,
+    fg = F
+  )
+  nr <- 5
+  out5 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[nr],
+    event = outvars$var[nr],
+    eventname = outvars$name[nr],
+    novar = novar,
+    fg = F
+  )
+  nr <- 6
+  out6 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[nr],
+    event = outvars$var[nr],
+    eventname = outvars$name[nr],
+    novar = novar,
+    fg = F
+  )
+  nr <- 7
+  out7 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[nr],
+    event = outvars$var[nr],
+    eventname = outvars$name[nr],
+    novar = novar,
+    fg = F
+  )
+  outall <- rbind(out1, out2, out3, out4, out5, out6, out7)
+
+  make_one_xlsxsheet(outall)
+
+  default_kable(outall) %>%
+    # add_header_above(c(" " = 1, " " = 1, "Anxiety/depression" = 3)) %>%
+    footnote(
+      general_title = "",
+      general = "Abbreviations: py: person-years; CI: Confidence interval"
+    ) %>%
+    column_spec(1, width = "6cm")
+}
+```
+
+```{r}
+#| label: tbl-outcomes
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata)
+```
+
+```{r}
+#| label: tbl-outcomes-male
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Male"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(scb_sex == "Male"), fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-female
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Female"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(scb_sex == "Female"), fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-age_65
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Age < 65"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(scb_age_cat == "<65"), fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-age_6580
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Age 65-80"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(scb_age_cat == "65-80"), fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-age_80
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Age > 80"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(scb_age_cat == ">80"), fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-year20062010
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2006-2010"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(year_cat == "2006-2010"), fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-year20112015
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2011-2015"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(year_cat == "2011-2015"), fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-year20162020
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2016-2020"
+#| tbl-pos: "H"
+
+outcomesfunc(data = sdata %>% filter(year_cat == "2016-2020"), fgall = F)
+```

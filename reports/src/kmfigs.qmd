@@ -1,0 +1,178 @@
+```{r}
+#| label: kmfunc
+#| cache: true
+#| cache.comments: false
+
+coxvars <- modvars
+coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+
+kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
+                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0) {
+  levs <- levels(data %>% pull(case))
+  nlevs <- length(levs)
+
+  # cox results
+  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case + frailty(lopnrcase)")),
+    data = data
+  ))
+
+  cox_crude <- c(
+    "Crude HR (95% CI)",
+    "reference",
+    paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), ")"
+    )
+  )
+
+  coxvars2 <- setdiff(coxvars, novar)
+  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case +", paste(coxvars2, collapse = " + "), "+ frailty(lopnrcase)")),
+    data = data
+  ))
+
+  cox_adj <- c(
+    "Adj HR (95% CI)",
+    "reference",
+    paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), ")"
+    )
+  )
+
+  fit <- survfit(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case")),
+    data = data
+  )
+
+  fuyears <- 14
+  s <- summary(fit, times = seq(0, fuyears * 366, 1), extend = T)
+
+  plot_data <- tibble(
+    "time" = s$time,
+    "n.risk" = s$n.risk,
+    "n.event" = s$n.event,
+    "n.censor" = s$n.censor,
+    "estimate" = 1 - s$surv,
+    "strata" = s$strata
+  ) %>%
+    mutate(
+      strata = fct_rev(fct_inorder(str_remove_all(strata, "case="))),
+    )
+  ylim <- c(0, 1)
+  ylab <- paste0(eventname, " (%)")
+
+  p <- ggplot(plot_data, aes(x = time / 365.25, y = estimate, color = strata)) +
+    geom_step(aes(linetype = strata), linewidth = 1) +
+    scale_color_manual(values = c(global_cols[1:2])) +
+    # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
+    # scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = c(0, 1), expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, fuyears, 2), limits = c(0, fuyears)) +
+    scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = ylim) +
+    theme_classic() +
+    theme(
+      text = element_text(size = 20, face = "bold"),
+      legend.position = "none",
+      axis.text = element_text(color = "black"),
+    ) +
+    labs(x = "Follow-up (years)", y = ylab) +
+    annotate("text",
+      x = textadjx, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = c("", levs),
+      hjust = 0, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
+    ) +
+    annotate("text",
+      x = textadjx + 3.2, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_crude,
+      hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
+    ) +
+    annotate("text",
+      x = textadjx + 6.5, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_adj,
+      hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
+    )
+
+  # n at risk
+  table_data <- plot_data %>%
+    filter(
+      time %in% c(seq(0, fuyears, 2) * 366)
+    )
+
+  t <- ggplot(table_data, aes(y = strata, x = time / 365.25)) +
+    geom_text(aes(label = n.risk), size = 6, fontface = "bold", colour = rep(global_cols[2:1], each = 8)) +
+    # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
+    # scale_y_discrete(expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, fuyears, 2), limits = c(0, fuyears)) +
+    coord_cartesian(xlim = c(0, fuyears), clip = "off") +
+    labs(
+      subtitle = "No. at risk"
+    ) +
+    theme(
+      text = element_text(size = 20, face = "bold"),
+      plot.caption = element_text(size = 20, face = "bold"),
+      panel.background = element_blank(),
+      axis.text.x = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title = element_blank(),
+      # plot.margin = unit(c(0, 1, 0, 3), "cm"), # trouble
+      # axis.text.y = element_blank()
+      # axis.text.y = element_text(margin = margin(0, 0, 0, 100))
+      axis.text.y = element_text(hjust = 0, colour = global_cols[1:2], face = "bold")
+    )
+
+  km <- (p / t) + plot_layout(height = c(1, .25))
+  create_pptx(km)
+  km
+}
+```
+
+```{r}
+#| label: fig-cicmcf
+#| cache: true
+#| cache.comments: false
+#| dependson: kmfunc
+#| fig-cap: "Cumulative incidence"
+#| fig-subcap: !expr outvars$shortname
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+nr <- 1
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 2
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 3
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 4
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 5
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 6
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 7
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+```

@@ -1,0 +1,293 @@
+---
+title: "Statistical report: Outcomes of stable angina patients with non-obstructive coronary artery disease"
+subtitle: DRAFT
+date: "`r Sys.Date()`"
+cover: static/ki_logo_vert_rgb.png
+editor: source
+format:
+  pdf:
+    documentclass: scrartcl
+    template-partials:
+      - "static/before-body.tex"
+      - "static/_titlepage.tex"
+    include-in-header: 
+      - "static/in-header.tex"
+    toc: true
+    toc-depth: 3
+    toc-title: Contents
+    lof: true
+    lot: true
+    cap-location: top
+    number-sections: true
+    colorlinks: false
+    keep-tex: false
+bibliography: static/references.bib
+csl: static/bmj.csl
+link-citations: true
+link-bibliography: true
+nocite: '@*'
+knitr:
+  opts_chunk: 
+    dev: cairo_pdf
+    collapse: true
+    comment: "" 
+    echo: FALSE
+    include: TRUE
+    warning: FALSE
+    message: FALSE
+    fig.pos: "H"
+    fig.path: "../output/figs/"
+    fig.height: 6
+    fig.width: 10
+    R.options:
+      knitr.graphics.auto_pdf: true
+---
+
+```{r}
+#| label: set-up-load-data
+options(knitr.kable.NA = "")
+
+# load packages, globals and project specific functions
+source(here::here("setup/setup.R"))
+
+# load data
+load(here("data/clean-data/sdata.RData"))
+
+# load workbook to write tables to Excel
+wb <- loadWorkbook(here("output/tabs/tables.xlsx"))
+sheets <- names(wb)
+
+# load pptx file with figs
+figs <- officer::read_pptx(path = here::here("output/figs/figs.pptx"))
+pptx <- TRUE
+```           
+
+\newpage
+
+# Data
+
+## Data sources
+
+SWEDEHEART - SCAAR is an ongoing nationwide quality register. 
+SCAAR was linked with national Swedish registries through the Swedish personal identity number (PIN)[@pin]: 
+
+- The National Prescribed Drug Register (The National Board of Health and Welfare) for information on medications
+- The National Patient Register (The National Board of Health and Welfare) for additional comorbidities and outcomes
+- The Cause of Death Register[@dors] (The National Board of Health and Welfare) for outcomes death
+- Longitudinal integrated database for health insurance and labour market studies (LISA)[@lisa] (Statistics Sweden) for socio-economic factors and selection of controls
+
+## Inclusion/exclusion criteria
+
+```{r}
+#| label: tbl-flow
+#| tbl-cap: Information for flowchart
+#| tbl-pos: "H"
+
+default_kable(flow)
+```
+
+First patient in: `r min(sdata$INTERDAT, na.rm = T)` and last patient in: `r max(sdata$INTERDAT, na.rm = T)` 
+from approximately `r sdata %>% distinct(CENTREID) %>% count() %>% pull(n)` enrolling centers. 
+
+Baseline is set to the intervention date + `r global_indexplus` days. The `r global_indexplus` days is in order to take into account that medications can be collected from the pharmacy up to `r global_indexplus` days after the intervention and to avoid that the outcomes are baseline events. However, hospitalizations were linked together (if a hospitalization started on the same day as a previous hospitalization they were considered as the same hospitalization in order to take into account moves between clinics). ÄNDRA TILL 7 dagar????
+
+Här behöver ni kolla anledning till missing segment 2020. 
+
+Note to self: Ta bort även de som saknar kontroller. Kolla om bättre antalsmässigt med 1 kontroll / case. Kolla om bättr4e med 1 kontroll/case eller ta bort match på län. Kolla vilka som inte har kontroller (tabell). Om många ta med dessa i tidsanalys. 
+
+OBS! nu enbart 400 fall med kontroller då körningstid jättelång. Kolla igenom inklusions/exklusionskriterier, särskilt koder. 
+
+## Definitions
+
+### Controls
+
+The original control population was matched to another population by year of birth, sex and county of residence assuming no previous indication (ANGE VILKEN INDIKATION). 
+
+For this study the 2 controls / case were re-matched by year of birth, sex and county of residence and without prior registration in SCAAR or indication according to the National Patient Register (Procedure codes FNA-H or diagnosis codes I01.2, I09.0, I40, I41, I42.3, I51.4 or I51.4B). NOT THE SAME as for cases, föreslår att du använder samma koder för båda. 
+Note to self: ANGE OM FINNS 2 kontroller till alla. 
+
+### Variables
+
+{{< include src/vars.qmd >}}
+
+KOLLA IGENOM KODER NOGGRANT. OBSERVERA ATT ALLA ICD DU SPECADE INTE FINNS MED DÅ INTE ÄR BESTÄLLDA ENLIGT SOS SPECEN (SE TIDIGARE SKICKAT DOKUMENT). Detta måste kollas. 
+
+HAR ÄVEN LAGT TILL NÅGRA COMORB. SE OM OK. 
+
+Names for case (stable angina???)/control??? For tables/figs.
+
+# Statistical analysis 
+
+## General
+
+All analyses were performed using `r sessionInfo()$R.version$version.string` [@r]. 
+The level of significance is set to 5%, two-sided. No adjustment for multiple 
+comparisons were made and therefore the results should be viewed with care.
+
+## Missing data
+
+```{r}
+missedu <- sdata %>%
+  count(is.na(scb_education)) %>%
+  mutate(np = paste0(n, " (", fn(n / sum(n) * 100, 1), "%)")) %>%
+  filter(`is.na(scb_education)`) %>%
+  pull(np)
+missmar <- sdata %>%
+  count(is.na(scb_maritalstatus)) %>%
+  mutate(np = paste0(n, " (", fn(n / sum(n) * 100, 1), "%)")) %>%
+  filter(`is.na(scb_maritalstatus)`) %>%
+  pull(np)
+missinc <- sdata %>%
+  count(is.na(scb_dispincome)) %>%
+  mutate(np = paste0(n, " (", fn(n / sum(n) * 100, 1), "%)")) %>%
+  filter(`is.na(scb_dispincome)`) %>%
+  pull(np)
+```
+
+Since absence of a prescription/ICD/procedure code was considered as No, the proportion of 
+missing data was low and only occurred for education in `r missedu` persons, for marital status in `r missmar` persons and for income in `r missinc` persons. 
+Due to the low % of missing data no multiple imputation was performed but type (for education and marital status) and median within year 
+(disposable income) were imputed when used in the multivariable models. 
+
+## Subgroups
+
+All analyses were also performed according to sex, age-groups and year of inclusion. 
+
+## Baseline characteristics
+
+Baseline characteristics are presented by cases/controls. 
+Categorical variables are presented with n and percentage and tested for 
+differences between groups with the chi-square test. 
+Continuous variables are presented with median [first quartile-third quartile] and tested for 
+differences between groups with the Kruskal-Wallis test.Ändra detta till stand diff.
+
+## Outcomes
+
+The following outcomes are considered: 
+
+- `r paste0(outvars$name[1], " (", outvars$shortname[1], ") (primary outcome)")`
+- `r paste0(outvars$name[2], " (", outvars$shortname[2], ")")`
+- `r paste0(outvars$name[3], " (", outvars$shortname[3], ")")`
+- `r paste0(outvars$name[4], " (", outvars$shortname[4], ")")`
+- `r paste0(outvars$name[5], " (", outvars$shortname[5], ")")`
+- `r paste0(outvars$name[6], " (", outvars$shortname[6], ")")`
+- `r paste0(outvars$name[7])`
+
+Data were censored at 2020-12-31, emigration from Sweden or at death from other causes than the event. 
+
+### Association between outcomes and cases/controls
+
+Time to first events were presented with cumulative incidence curves by case/control. 
+
+Cox proportional hazards regressions were used to model the time to first event including the matched pairs as a frailty term in the model. 
+Crude and adjusted analyses were performed where adjustment was performed for 
+variables indicated in @tbl-base. And, by design also for matching, age, sex and county of residence. 
+
+## Association between outcomes and time for cases
+
+For the cases only cox proportional hazards regressions were used to model 
+the association between the respective outcomes and year of intervention. Year was modeled using a restricted cubic spline with 5 knots. 
+Crude and adjusted analyses were performed where adjustment was performed for 
+variables indicated in @tbl-base together with age and sex. 
+
+
+### Assumptions
+
+TO BE CHECKED!!!! The proportional hazards assumption was investigated using the scaled Schoenfeld 
+residuals leading to that `r paste0(stratavars, collapse =", ")` were stratified for in the models.  
+Possible outliers were visually inspected by plotting the dfbetas. 
+
+\clearpage
+
+# Results
+
+```{r}
+med <- sdata %>%
+  summarise(
+    med = fn(median(scb_age), dig = 0),
+    q1 = fn(quantile(scb_age, probs = 0.25), dig = 0),
+    q3 = fn(quantile(scb_age, probs = 0.75), dig = 0)
+  ) %>%
+  mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
+  pull(out)
+
+percfem <- sdata %>%
+  count(scb_sex) %>%
+  mutate(perc = fn(n / sum(n) * 100, 0)) %>%
+  filter(scb_sex == "Female") %>%
+  pull(perc)
+```
+
+The median (q1-q3) age is `r med` and `r percfem`% females. 
+
+## Baseline characteristics
+
+{{< include src/basetab.qmd >}}
+
+\clearpage
+
+## Association between outcomes and cases/controls
+
+```{r}
+medsurv <- sdata %>%
+  summarise(
+    med = fn(median(sos_outtime_death / 365.25), dig = 0),
+    min = fn(min(sos_outtime_death / 365.25), dig = 0),
+    max = fn(max(sos_outtime_death / 365.25), dig = 0)
+  ) %>%
+  mutate(out = paste0(med, " (", min, "-", max, ")")) %>%
+  pull(out)
+
+sumsurv <- sdata %>%
+  summarise(sumpy = fn(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
+  pull(sumpy)
+```
+
+The median (min-max) follow-up is 
+`r medsurv` years for a total of `r sumsurv` patient-years of follow-up.
+
+{{< include src/outcomes.qmd >}}
+
+\clearpage
+
+{{< include src/kmfigs.qmd >}}
+
+Subgroups in same or diferent plots?
+
+Om ni vill testa om det finns en skillnad mellan könen avseende associationen mellan utfall och case/controll bör använda interaktionsanalyser. Beror lite på hur ni vill presentera/beskriva det. 
+
+Rätt mycket DM för inte så mycket analyser enligt projektplanen. Ni vill inte titta på något annat också? Se förslag på tidstrender nedan. 
+
+Se initial ökning av revasc i case grupp. Är detta som förväntat? Är det relvant att ens ha revasc i composite utfall om detta är primärrt?
+
+\clearpage
+
+## Association between outcomes and time for cases
+
+{{< include src/timespline.qmd >}}
+
+note to self: fixa färger. och någon form av hr estimat (linjärt? tertiler?)
+
+Om vill titta på detta kanske inte presenter case/control per tid? Alt lägg till baseline tab med bara cases (eller stand diff dem emellan). 
+
+# Reproducibility
+
+## R code
+
+The R code for all data handling and statistical analyses are found: 
+
+https://github.com/KIHeartFailure/scaar-stableangina. On publication
+the repository will be made public so as to 
+link to it from the resulting article for increased transparency and code sharing.
+No data or output is stored in the repository. 
+
+## R session information {#sessioninfo}
+
+```{r sessinfo}
+sessionInfo()
+```
+
+# References
+
+::: {#refs}
+:::

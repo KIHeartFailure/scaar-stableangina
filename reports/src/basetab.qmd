@@ -7,6 +7,24 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
   tmp <- data %>%
     filter(!is.na(!!sym(x)) & !is.na(!!sym(stratavar)))
 
+  if (str_detect(x, "scaar_")) {
+    pmis <- data %>%
+      filter(!is.na(!!sym(stratavar)) & case == "Case") %>%
+      mutate(mis = factor(if_else(is.na(!!sym(x)), 1, 0), levels = 0:1)) %>%
+      count(mis, .drop = F) %>%
+      mutate(pmis = fn(n / sum(n) * 100, catdig)) %>%
+      filter(mis == "1") %>%
+      pull(pmis)
+  } else {
+    pmis <- data %>%
+      filter(!is.na(!!sym(stratavar))) %>%
+      mutate(mis = factor(if_else(is.na(!!sym(x)), 1, 0), levels = 0:1)) %>%
+      count(mis, .drop = F) %>%
+      mutate(pmis = fn(n / sum(n) * 100, catdig)) %>%
+      filter(mis == "1") %>%
+      pull(pmis)
+  }
+
   cl <- class(data %>% pull(!!sym(x)))
   if (cl %in% c("character", "factor")) {
     out <- tmp %>%
@@ -43,17 +61,20 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
         mutate(
           var = x,
           p = p,
+          pmis = pmis,
           level = NA
         )
     } else {
       out <- out %>%
         mutate(
           var = NA,
-          p = NA
+          p = NA,
+          pmis = NA
         )
       out <- out %>% add_row(
         var = x,
         p = p,
+        pmis = pmis,
         .before = 1
       )
     }
@@ -99,7 +120,8 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
     out <- out %>%
       mutate(
         var = x,
-        p = p
+        p = p,
+        pmis = pmis
       )
   } else {
     stop("Unknown class in baseline table")
@@ -117,9 +139,10 @@ basetabfunc <- function(data, novars = NULL) {
     mutate(
       var = "N (%)",
       level = NA,
-      p = NA
+      p = NA,
+      pmis = NA
     ) %>%
-    select(var, level, levels(data %>% pull(case)), p)
+    select(var, level, pmis, levels(data %>% pull(case)), p)
 
   tabvarstmp <- setdiff(tabvars, novars)
   tabtmp <- sapply(tabvarstmp,
@@ -160,14 +183,16 @@ basetabfunc <- function(data, novars = NULL) {
   # footnotes
   tab <- tab %>%
     mutate(
-      footnote1 = if_else(!is.na(var) & var %in% c(modvars, "scb_education", "scb_dispincome_cat"), footnote_marker_alphabet(1, format = "latex"), "")
+      footnote1 = if_else(!is.na(var) & var %in% c(modvars, "scb_education", "scb_dispincome_cat", "scb_maritalstatus"), footnote_marker_alphabet(1, format = "latex"), ""),
+      footnote2 = if_else(!is.na(var) & var %in% modvars_case, footnote_marker_alphabet(2, format = "latex"), "")
     ) %>%
     unite(footnote, starts_with("footnote"), sep = "")
 
-  cn <- c("Variable", levels(data %>% pull(case)), "p-value")
+  cn <- c("Variable", "Missing (%)", levels(data %>% pull(case)), "p-value")
 
   footnotetext <- c(
-    "Included in adjusted regression models."
+    "Included in adjusted regression models in the analyses comparing cases and controls.",
+    "Included in imputation and regression models in the cases only analyses."
   )
 
   # excel
@@ -177,9 +202,10 @@ basetabfunc <- function(data, novars = NULL) {
       Variable = str_remove_all(Variable, "textsuperscript|\\}|\\{"),
       Variable = str_replace_all(Variable, "\\\\", " ")
     ) %>%
-    select(Variable, levels(data %>% pull(case))[1]:p) %>%
+    select(Variable, pmis:p) %>%
     add_row(Variable = "") %>%
-    add_row(Variable = paste0("a ", footnotetext[1]))
+    add_row(Variable = paste0("a ", footnotetext[1])) %>%
+    add_row(Variable = paste0("b ", footnotetext[2]))
 
   make_one_xlsxsheet(tab_xls, colnames = cn)
 
@@ -193,7 +219,7 @@ basetabfunc <- function(data, novars = NULL) {
       Variable = str_replace_all(Variable, fixed("$>$="), "$\\geq$"),
       Variable = str_replace_all(Variable, fixed("$<$="), "$\\leq$")
     ) %>%
-    select(Variable, levels(data %>% pull(case))[1]:p)
+    select(Variable, pmis:p)
 
   indent_rows <- tab %>%
     mutate(
@@ -318,8 +344,8 @@ basetabfunc(data = sdata %>% filter(year_cat == "2011-2015"), novars = "year_cat
 #| cache: true
 #| cache.comments: false
 #| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Year of inclusion 2016-2020"
+#| tbl-cap: "Baseline characteristics - Year of inclusion 2016-2019"
 #| tbl-pos: "H"
 
-basetabfunc(data = sdata %>% filter(year_cat == "2016-2020"), novars = "year_cat")
+basetabfunc(data = sdata %>% filter(year_cat == "2016-2019"), novars = "year_cat")
 ```

@@ -1,5 +1,8 @@
+segvars <- paste0("SEGMENT", 1:20)
+
 sdata <- sdata %>%
   mutate(
+    scaar_stenos = factor(pmax(!!!syms(segvars)), levels = 0:2, labels = c("-", "0-29", "30-49")),
     scb_region = case_when(
       Lan == "01" ~ "Stockholm",
       Lan == "03" ~ "Uppsala",
@@ -23,7 +26,7 @@ sdata <- sdata %>%
       Lan == "24" ~ "Vasterbotten",
       Lan == "25" ~ "Norrbotten"
     ),
-    scb_age = year - birthyear,
+    scb_age = year(indexdtm) - birthyear,
     scb_age_cat = factor(
       case_when(
         scb_age < 65 ~ 1,
@@ -34,10 +37,11 @@ sdata <- sdata %>%
       labels = c("<65", "65-80", ">80")
     ),
     scb_sex = factor(Kon, levels = 1:2, labels = c("Male", "Female")),
+    year = scbyear + 1,
     year_cat = factor(case_when(
       year <= 2010 ~ "2006-2010",
       year <= 2015 ~ "2011-2015",
-      year <= 2020 ~ "2016-2020"
+      year <= 2019 ~ "2016-2019"
     )),
     scaar_bmi = round(WEIGHT / (HEIGHT / 100)^2, 1),
     scaar_bmi_cat = factor(
@@ -64,8 +68,7 @@ sdata <- sdata %>%
     sos_out_comp = if_else(sos_out_deathcv == "Yes" |
       sos_out_hosphf == "Yes" |
       sos_out_hospmi == "Yes" |
-      sos_out_hospstroke == "Yes" |
-      sos_out_revasc == "Yes", "Yes", "No"),
+      sos_out_hospstroke == "Yes", "Yes", "No"),
     sos_outtime_comp = pmin(sos_outtime_hospmi, sos_outtime_hosphf),
     sos_outtime_comp = pmin(sos_outtime_comp, sos_outtime_hospstroke),
     sos_outtime_comp = pmin(sos_outtime_comp, sos_outtime_revasc),

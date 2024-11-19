@@ -1,0 +1,153 @@
+```{r}
+#| label: predictorsfunc
+#| cache: true
+#| cache.comments: false
+
+coxvars <- modvars_case
+coxvars[modvars_case %in% stratavars_case] <- paste0("strata(", coxvars[modvars_case %in% stratavars_case], ")")
+
+predictorsfunc <- function(time, event, xbreaks = c()) {
+  mod <- summary(pool(with(impsdata, coxph(formula(paste0(
+    "Surv(", time, ",", event, " == 'Yes') ~ ", paste(coxvars, collapse = " + ")
+  ))))))
+
+  out <- tibble(
+    var = mod$term,
+    hr = exp(mod$estimate),
+    lci = exp(mod$estimate - global_z05 * mod$std.error),
+    uci = exp(mod$estimate + global_z05 * mod$std.error)
+  ) %>%
+    mutate(
+      hrprint = paste0(
+        fn(hr, dig = 2),
+        " (", fn(lci, dig = 2),
+        "-", fn(uci, dig = 2), ")"
+      ),
+      cols = factor(case_when(
+        mod$p.value >= 0.05 ~ 2,
+        hr >= 1 ~ 1,
+        hr < 1 ~ 3
+      )),
+      var = str_remove_all(var, fixed("Yes"))
+    )
+
+  out <- left_join(out,
+    metavars %>%
+      select(variable, label),
+    by = c("var" = "variable")
+  ) %>%
+    mutate(
+      var = coalesce(label, var),
+      var = case_when(
+        var == "year_cat2011-2015" ~ "Year 2011-2015 vs 2006-2010",
+        var == "year_cat2016-2019" ~ "Year 2016-2019 vs 2006-2010",
+        var == "shf_durationhf>=6" ~ "Duration of HF (months) >=6 vs < 6",
+        var == "scb_sexFemale" ~ "Female vs Male",
+        var == "scb_age_cat65-80" ~ "Age (years) 65-80 vs <65",
+        var == "scb_age_cat>80" ~ "Age (years) >80 vs <65",
+        var == "scb_famtypeLiving alone" ~ "Living alone vs Cohabitating",
+        var == "scb_educationUniversity" ~ "University vs Compulsory school",
+        var == "scb_educationSecondary school" ~ "Secondary vs Compulsory school",
+        var == "scb_dispincome_cat2nd tertile within year" ~ "Income 2nd vs 1st tertile",
+        var == "scb_dispincome_cat3rd tertile within year" ~ "Income 3rd vs 1st tertile",
+        var == "scaar_smokePrevious" ~ "Previous vs Non-smoker",
+        var == "scaar_smokeCurrent" ~ "Current vs Non-smoker",
+        var == "scaar_bmi_cat>=30" ~ "BMI (kg/m²) >=30 vs <30",
+        var == "scaar_css>=2" ~ "CSS 2-4 vs 1",
+        var == "scb_maritalstatusSingle/widowed/divorced" ~ "Single vs Married",
+        var == "Malignant cancer within 3 years" ~ "Malignant cancer",
+        var == "scaar_stenos0-29" ~ "Stenos (%) 0-29 vs -",
+        var == "scaar_stenos30-49" ~ "Stenos (%) 30-49 vs -",
+        TRUE ~ var
+      ),
+      var = str_replace_all(var, ">=", "\u2265"),
+      var = str_replace_all(var, "<=", "\u2264")
+    ) %>%
+    arrange(hr) %>%
+    mutate(
+      var2 = forcats::fct_rev(forcats::fct_inorder(var))
+    )
+
+  # plot it
+  size_use <- 14
+
+  p <- ggplot(out, aes(x = hr, y = var2, color = cols)) +
+    # Add a reference dashed line at 1
+    geom_vline(xintercept = 1, linetype = "dashed", color = "grey", linewidth = 0.6) +
+    # Add dot plot and error bars
+    geom_errorbar(aes(xmin = lci, xmax = uci), width = 0, linewidth = 0.5) +
+    geom_point(size = 1.5, shape = 15) +
+    scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+    theme_classic() +
+    theme(
+      text = element_text(size = size_use, face = "bold"),
+      legend.position = "none",
+      axis.ticks.y = element_blank(),
+      axis.title.y = element_blank(),
+      # axis.text.y = element_blank(),
+      axis.line.y = element_line(colour = "white"),
+      plot.margin = unit(c(0, 0, 0, 0), "mm"),
+      axis.text = element_text(color = "black"),
+      panel.grid.major.y = element_line(colour = "grey94"),
+      plot.title = element_text(hjust = 0.5, size = size_use)
+    ) +
+    scale_x_continuous(trans = "log", breaks = xbreaks, limits = c(min(xbreaks), max(xbreaks))) +
+    labs(x = "Adjusted Hazard Ratio (95% CI)") +
+    ggtitle("Better - Worse\noutcome")
+
+  t <- ggplot(out) +
+    geom_text(aes(y = var2, x = 1, label = hrprint), size = size_use / .pt * 0.8, fontface = "bold") +
+    theme_classic() +
+    ggtitle("Adjusted\nHR (95% CI)") +
+    theme(
+      text = element_text(size = size_use, face = "bold"),
+      legend.position = "none",
+      axis.ticks.y = element_blank(),
+      axis.title = element_blank(),
+      axis.text.y = element_blank(),
+      axis.line.y = element_line(colour = "white"),
+      plot.margin = unit(c(0, 0, 0, 0), "mm"),
+      axis.line.x = element_line(color = "white"),
+      axis.ticks.x = element_line(color = "white"),
+      axis.text.x = element_text(color = "white"),
+      plot.title = element_text(hjust = 0.5, size = size_use)
+    )
+
+  pall <- p + t + plot_layout(ncol = 2, nrow = 1, widths = c(3, 1.9))
+
+  create_pptx(pall, width = 8, height = 8)
+  pall
+}
+```
+
+```{r}
+#| label: fig-predictors-comp
+#| cache: true
+#| cache.comments: false
+#| dependson: predictorsfunc
+#| fig-cap: "Association between baseline characteristics and the composite outcome"
+#| fig-width: 8
+#| fig-height: 8
+
+predictorsfunc(
+  time = outvars$time[1],
+  event = outvars$var[1],
+  xbreaks = c(0.5, 0.5, 1, 2, 4, 6)
+)
+```
+
+```{r}
+#| label: fig-predictors-revasc
+#| cache: true
+#| cache.comments: false
+#| dependson: predictorsfunc
+#| fig-cap: "Association between baseline characteristics and revascularzation"
+#| fig-width: 8
+#| fig-height: 8
+
+predictorsfunc(
+  time = outvars$time[6],
+  event = outvars$var[6],
+  xbreaks = c(0.1, 0.5, 1, 3)
+)
+```

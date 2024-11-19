@@ -2,37 +2,49 @@ kontroller2 <- kontroller %>%
   select(LopNrKontroll, FoddAr, Kon) %>%
   rename(lopnr = LopNrKontroll)
 
-patregkontroller <- left_join(kontroller2,
+kontroller2 <- anti_join(kontroller2,
+  grund2,
+  by = c("lopnr" = "LopNr")
+) # no re-used pins in control pop
+
+patregkontroller <- left_join(
+  kontroller2,
   patreg,
   by = c("lopnr")
 ) %>%
   mutate(
     pcimm = str_detect(OP_all, " FNA| FNB| FNC| FND| FNE| FNF| FNG| FNH"),
-    mimm = str_detect(DIA_all, " I012| I090| I40| I41| I423| I514| I514B")
+    mimm = str_detect(DIA_all, " I21| I22| I200| I012| I090| I40| I41| I423| I514")
   ) %>%
   filter(pcimm | mimm) %>%
   rename(casedtm = INDATUM) %>%
   select(lopnr, casedtm)
 
-scaarkontroller <- left_join(kontroller2,
+scaarkontroller <- left_join(
+  kontroller2,
   scaar,
   by = c("lopnr")
 ) %>%
   rename(casedtm = INTERDAT) %>%
   select(lopnr, casedtm)
 
-bothkontroller <- bind_rows(patregkontroller, scaarkontroller) %>%
+bothkontroller <- bind_rows(
+  patregkontroller,
+  scaarkontroller
+) %>%
   group_by(lopnr) %>%
   arrange(casedtm) %>%
   slice(1) %>%
   ungroup()
 
-kontroller2 <- left_join(kontroller2,
+kontroller2 <- left_join(
+  kontroller2,
   bothkontroller,
   by = "lopnr"
 )
 
-kontroller2 <- left_join(kontroller2,
+kontroller2 <- left_join(
+  kontroller2,
   dors %>% select(lopnr, sos_deathdtm, sos_deathcause),
   by = "lopnr"
 )
@@ -49,21 +61,20 @@ kontrollmatch <- inner_join(
   by = c("lopnr")
 ) %>%
   mutate(
-    year = year + 1,
-    enddtm = pmin(sos_deathdtm, scb_emigrationdtm, na.rm = T),
-    enddtm = pmin(enddtm, casedtm, na.rm = T),
+    enddtm = pmin(sos_deathdtm, scb_emigrationdtm, casedtm, global_endfollowup, na.rm = T)
   ) %>%
   rename(lopnrcontrol = lopnr)
 
 controls <- left_join(
   sdata %>%
-    select(lopnr, indexdtm, year, birthyear, Kon, Lan),
+    select(lopnr, indexdtm, scbyear, birthyear, Kon, Lan),
   kontrollmatch,
-  by = c("year", "birthyear", "Kon", "Lan")
+  by = c("scbyear", "birthyear", "Kon", "Lan")
 ) %>%
-  filter(is.na(enddtm) | enddtm >= indexdtm)
+  filter(enddtm >= indexdtm)
 
-lopnrcase <- sdata$lopnr[1:400]
+set.seed(38478257)
+lopnrcase <- sample(sdata$lopnr, nrow(sdata), replace = FALSE)
 controlsout <- controls %>%
   slice(1) %>%
   mutate(lopnr = 0)
@@ -97,3 +108,23 @@ sdata <- bind_rows(
     mutate(case = 0)
 ) %>%
   mutate(case = factor(case, levels = 0:1, labels = c("Control", "Case")))
+
+sdata <- left_join(
+  sdata,
+  sdata %>%
+    filter(case == "Control") %>%
+    group_by(lopnrcase) %>%
+    count() %>%
+    ungroup(),
+  by = c("lopnrcase")
+) %>%
+  mutate(
+    ncontrols = replace_na(n, 0)
+  )
+
+sdata <- sdata %>%
+  filter(ncontrols >= 1)
+flow <- add_row(flow,
+  criteria = paste0("1-2 matched controls"),
+  n = nrow(sdata %>% filter(case == "Case"))
+)

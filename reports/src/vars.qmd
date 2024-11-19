@@ -75,7 +75,7 @@ vars <- vars %>%
     ),
     data4 = if_else(str_detect(var, "scb_education|scb_dispincome"), "LISA", NA),
     data5 = if_else(str_detect(var, "scb_child|cb_maritalstatus|scb_age|scb_sex"), "RTP", NA),
-    data6 = if_else(str_detect(var, "scaar_"), "SCAAR", NA),
+    data6 = if_else(str_detect(var, "scaar_|year"), "SCAAR", NA),
     footnote1 = if_else(str_detect(var, "sos_com"), footnote_marker_alphabet(1, format = "latex"), ""),
     footnote2 = if_else(str_detect(var, "sos_lm"), footnote_marker_alphabet(2, format = "latex"), ""),
     footnote3 = if_else(str_detect(var, "sos_out") & !str_detect(var, "sos_out_death"), footnote_marker_alphabet(3, format = "latex"), ""),

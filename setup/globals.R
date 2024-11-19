@@ -13,6 +13,6 @@ global_cols <- RColorBrewer::brewer.pal(7, "Dark2")
 
 fstpath <- paste0("./data/fst-data/")
 
-global_endfollowup <- ymd("2020-12-31")
+global_endfollowup <- ymd("2019-12-31")
 
-global_indexplus <- 14
+global_indexplus <- 92

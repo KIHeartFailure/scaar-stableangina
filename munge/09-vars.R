@@ -9,6 +9,7 @@ tabvars <- c(
   "scb_age_cat",
 
   # comorbs
+  "scaar_stenos",
   "scaar_smoke",
   "scaar_bmi",
   "scaar_bmi_cat",
@@ -45,17 +46,27 @@ tabvars_not_in_mod <- c(
   "scaar_css",
   "scb_dispincome_cat",
   "scb_education",
-  "scb_maritalstatus"
+  "scb_maritalstatus",
+  "scaar_stenos"
 )
 
 modvars <- c(tabvars[!(tabvars %in% tabvars_not_in_mod)], "scb_educationimp", "scb_dispincomeimp_cat", "scb_maritalstatusimp")
 stratavars <- c()
 
+tabvars_not_in_mod <- c(
+  "year", "scb_age",
+  "scaar_bmi",
+  "sos_com_ckd"
+)
+
+modvars_case <- tabvars[!(tabvars %in% tabvars_not_in_mod)]
+stratavars_case <- c()
+
 outvars <- tibble(
   var = c("sos_out_comp", "sos_out_death", "sos_out_deathcv", "sos_out_hosphf", "sos_out_hospmi", "sos_out_hospstroke", "sos_out_revasc"),
   time = c("sos_outtime_comp", "sos_outtime_death", "sos_outtime_death", "sos_outtime_hosphf", "sos_outtime_hospmi", "sos_outtime_hospstroke", "sos_outtime_revasc"),
   name = c(
-    "Composite of cardiovascular death, myocardial infarction, stroke, revascularisation or hospitalisation for heart failure", "Death",
+    "Composite of cardiovascular death, myocardial infarction, stroke or hospitalisation for heart failure", "Death",
     "Cardiovascular death", "First heart failure hospitalization", "First myocardial infarction", "First stroke", "First revascularization"
   ),
   shortname = c("Composite", "Death", "CV death", "1st HF hospitalization", "1st MI", "1st stroke", "1st revascularization"),
@@ -74,6 +85,7 @@ metavars <- bind_rows(
       "scaar_smoke",
       "scaar_bmi",
       "scaar_css",
+      "scaar_stenos",
       "sos_com_hf",
       "sos_com_ckd",
       "sos_lm_rasiarni",
@@ -85,10 +97,11 @@ metavars <- bind_rows(
       "scb_age"
     ),
     label = c(
-      "Year of inclusion",
+      "Year of intervention",
       "Smoking",
       "BMI",
       "CSS",
+      "Degree of stenosis (??? kallas det så?)",
       "Heart failure",
       "CKD",
       "RASi/ARNi",
@@ -99,6 +112,6 @@ metavars <- bind_rows(
       "Sex",
       "Age"
     ),
-    units = c(rep(NA, 2), "kg/m²", rep(NA, 9), "years")
+    units = c(rep(NA, 2), "kg/m²", rep(NA, 10), "years")
   )
 )

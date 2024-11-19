@@ -3,12 +3,17 @@
 #| cache: true
 #| cache.comments: false
 
-splinefunc <- function(time, event, eventname, ylims = c(0.1, 0.5, 1, 2, 4)) {
+splinefunc <- function(time, event, eventname, ylims = c(0.1, 0.2, 0.5, 1, 2, 3)) {
   fitcrude <- cph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ rcs(year, 5)")),
-    data = data
+    data = sdatauseforimp
   )
-  fitadj <- cph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ rcs(year, 5) + ", paste(coxvars, collapse = " + "))),
-    data = data
+  fitadj <- fit.mult.impute(
+    (formula(paste(
+      "Surv(", time, ",", event, "== 'Yes') ~ rcs(year, 5) + ",
+      paste(coxvars, collapse = " + ")
+    ))),
+    fitter = cph,
+    xtrans = impsdata, data = sdatauseforimp, pr = F
   )
 
   plotcrude <- Predict(fitcrude, year, ref.zero = TRUE, fun = exp)
@@ -24,20 +29,22 @@ splinefunc <- function(time, event, eventname, ylims = c(0.1, 0.5, 1, 2, 4)) {
     mutate(typemod = factor(typemod, levels = 1:2, labels = c("Crude", "Adjusted")))
 
   size_use <- 18
-  med <- quantile(data %>% pull(year), na.rm = T, p = 0.5)
+  med <- quantile(sdatauseforimp %>% pull(year), na.rm = T, p = 0.5)
 
   p <- ggplot(plotspline, aes(x = year, y = yhat, colour = typemod)) +
     geom_hline(yintercept = 1, linetype = "longdash", ) +
     geom_vline(xintercept = med, linetype = "longdash") +
     geom_line(linewidth = 1.5) +
-    geom_ribbon(aes(ymin = lower, ymax = upper, fill = typemod), alpha = 0.3, linetype = 0) +
-    # scale_color_manual(values = global_cols[1:2]) +
+    geom_ribbon(data = plotspline %>% filter(typemod == "Crude"), aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = 0, fill = global_cols[1], show.legend = FALSE) +
+    geom_ribbon(data = plotspline %>% filter(typemod == "Adjusted"), aes(ymin = lower, ymax = upper), alpha = 0.2, linetype = 0, fill = global_cols[2], show.legend = FALSE) +
+    scale_color_manual(values = global_cols[1:2]) +
     theme_classic() +
     theme(
       plot.margin = margin(0, 0, 0, 0, "cm"), # TRouBLe
-      text = element_text(size = size_use),
+      text = element_text(size = size_use, face = "bold"),
       legend.position = "bottom",
-      legend.title = element_blank()
+      legend.title = element_blank(),
+      axis.text = element_text(color = "black")
     ) +
     scale_y_continuous(
       trans = "log", breaks = ylims,
@@ -45,7 +52,7 @@ splinefunc <- function(time, event, eventname, ylims = c(0.1, 0.5, 1, 2, 4)) {
       # expand = c(0, 0),
     ) +
     scale_x_continuous(
-      breaks = seq(2006, 2020, 2), # expand = c(0, 0)
+      breaks = seq(2006, 2020, 1), guide = guide_axis(n.dodge = 2) # expand = c(0, 0)
     ) +
     labs(x = "Calender year", y = "Hazard Ratio (95% CI)")
 
@@ -64,14 +71,10 @@ splinefunc <- function(time, event, eventname, ylims = c(0.1, 0.5, 1, 2, 4)) {
 #| layout-ncol: 2
 #| layout-nrow: 2
 
-coxvars <- c(modvars, "scb_age", "scb_sex")
-coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+coxvars <- setdiff(modvars_case, "year_cat")
+coxvars[coxvars %in% stratavars_case] <- paste0("strata(", coxvars[modvars_case %in% stratavars_case], ")")
 
-data <- sdata %>%
-  filter(case == "Case") %>%
-  select(!!!syms(modvars), scb_age, scb_sex, year, contains("sos_out"))
-
-dd <- datadist(data)
+dd <- datadist(sdatauseforimp)
 options(datadist = "dd")
 
 nr <- 1
@@ -96,7 +99,8 @@ nr <- 4
 splinefunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
-  eventname = outvars$shortname[nr]
+  eventname = outvars$shortname[nr],
+  ylims = c(0.1, 0.2, 0.5, 1, 2, 3, 5)
 )
 nr <- 5
 splinefunc(
@@ -109,7 +113,7 @@ splinefunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
   eventname = outvars$shortname[nr],
-  ylims = c(0.05, 0.5, 1, 2, 4, 8, 14)
+  ylims = c(0.01, 0.05, 0.1, 0.2, 0.5, 1, 2, 4, 8)
 )
 nr <- 7
 splinefunc(

@@ -6,15 +6,11 @@ dors <- read_fst("./data/fst-data/dors.fst")
 source("./munge/01-prep_npr-dors.R")
 write.fst(dors, paste0(fstpath, "prepdors.fst"))
 
-source(here::here("setup/setup.R"))
-sv <- read_fst("./data/fst-data/sv.fst")
-source("./munge/02-prep-npr-sv.R")
-write.fst(svlink, paste0(fstpath, "prepsvlink.fst"))
-
 # ov + sv
 source(here::here("setup/setup.R"))
+sv <- read_fst("./data/fst-data/sv.fst")
 ov <- read_fst("./data/fst-data/ov.fst")
-source("./munge/03-prep-npr.R")
+source("./munge/02-prep-npr.R")
 write.fst(patreg, paste0(fstpath, "patreg.fst"))
 
 # scaar
@@ -25,14 +21,14 @@ patreg <- read.fst(paste0(fstpath, "patreg.fst"))
 dors <- read.fst(paste0(fstpath, "prepdors.fst"))
 sentv <- read.fst(paste0(fstpath, "sentv.fst"))
 rtb <- read.fst(paste0(fstpath, "rtb.fst"))
-source(here("munge/04-pop-selection.R"))
+source(here("munge/03-pop-selection.R"))
 
 # controls and matching
 kontroller <- read.fst(paste0(fstpath, "kontroller.fst"))
-source(here("munge/05-controls.R"))
+source(here("munge/04-controls.R"))
 
 # fu time
-source(here("munge/06-endtime.R"))
+source(here("munge/05-endtime.R"))
 
 save(
   file = here("data/clean-data/meta1"),
@@ -44,14 +40,14 @@ save(
 
 # socioec
 lisa <- read.fst(paste0(fstpath, "lisa.fst"))
-source(here("munge/07-scb-lisa.R"))
+source(here("munge/06-scb-lisa.R"))
 write.fst(sdata, paste0(fstpath, "sdata.fst"))
 
 # comorbs + outcomes
 source(here::here("setup/setup.R"))
 patreg <- read.fst(paste0(fstpath, "patreg.fst"))
 sdata <- read.fst(paste0(fstpath, "sdata.fst"))
-source(here("munge/08-npr-outcom.R"))
+source(here("munge/07-npr-outcom.R"))
 write.fst(sdata, paste0(fstpath, "sdata.fst"))
 
 save(
@@ -64,7 +60,7 @@ save(
 # medications
 source(here::here("setup/setup.R"))
 sdata <- read.fst(paste0(fstpath, "sdata.fst"))
-source(here("munge/09-pdr-med.R"))
+source(here("munge/08-pdr-med.R"))
 write.fst(sdata, paste0(fstpath, "sdata.fst"))
 
 save(
@@ -74,7 +70,7 @@ save(
   )
 )
 
-# fixvars
+# fixvars and imp
 source(here::here("setup/setup.R"))
 sdata <- read.fst(paste0(fstpath, "sdata.fst"))
 
@@ -83,8 +79,9 @@ load(here("data/clean-data/meta1"))
 load(here("data/clean-data/meta2"))
 load(here("data/clean-data/meta3"))
 
-source(here("munge/10-vars.R"))
-source(here("munge/11-fix-vars.R"))
+source(here("munge/09-vars.R"))
+source(here("munge/10-fix-vars.R"))
+source(here("munge/11-mi.R"))
 write.fst(sdata, paste0(fstpath, "sdata.fst"))
 
 # Cache/save data ---------------------------------------------------------
@@ -93,11 +90,15 @@ save(
   file = here("data/clean-data/sdata.RData"),
   list = c(
     "sdata",
+    "impsdata",
+    "sdatauseforimp",
     "flow",
     "modvars",
+    "modvars_case",
     "tabvars",
     "outvars",
     "stratavars",
+    "stratavars_case",
     "metavars",
     "metalm",
     "deathmeta",

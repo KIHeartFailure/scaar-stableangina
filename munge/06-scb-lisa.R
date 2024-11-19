@@ -1,8 +1,5 @@
 # anyDuplicated(demo$lopnr)
 
-sdata <- sdata %>%
-  mutate(scbyear = year - 1)
-
 rtb2 <- rtb %>%
   mutate(
     scb_maritalstatus = case_when(
@@ -10,9 +7,9 @@ rtb2 <- rtb %>%
       Civil %in% c("G", "RP") ~ "Married"
     )
   ) %>%
-  select(LopNr, year, scb_maritalstatus)
+  select(LopNr, scbyear, scb_maritalstatus)
 
-sdata <- left_join(sdata, rtb2, by = c("lopnr" = "LopNr", "scbyear" = "year"))
+sdata <- left_join(sdata, rtb2, by = c("lopnr" = "LopNr", "scbyear"))
 
 lisa2 <- lisa %>%
   mutate(
@@ -27,14 +24,13 @@ lisa2 <- lisa %>%
 
     scb_dispincome = coalesce(DispInk04_INKLGP, DispInk04)
   ) %>%
-  select(LopNr, year, starts_with("scb_"))
+  select(LopNr, scbyear, starts_with("scb_"))
 
 sdata <- left_join(
   sdata,
   lisa2,
-  by = c("lopnr" = "LopNr", "scbyear" = "year")
-) %>%
-  select(-scbyear)
+  by = c("lopnr" = "LopNr", "scbyear")
+)
 
 rm(rtb)
 rm(rtb2)

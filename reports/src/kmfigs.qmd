@@ -7,7 +7,7 @@ coxvars <- modvars
 coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
 
 kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
-                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0) {
+                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0, smally = c(0, .1)) {
   levs <- levels(data %>% pull(case))
   nlevs <- length(levs)
 
@@ -45,8 +45,8 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
     data = data
   )
 
-  fuyears <- 14
-  s <- summary(fit, times = seq(0, fuyears * 366, 1), extend = T)
+  fuyears <- 12
+  s <- summary(fit, times = seq(0, fuyears * 365, 1), extend = T)
 
   plot_data <- tibble(
     "time" = s$time,
@@ -62,7 +62,7 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
   ylim <- c(0, 1)
   ylab <- paste0(eventname, " (%)")
 
-  p <- ggplot(plot_data, aes(x = time / 365.25, y = estimate, color = strata)) +
+  p <- ggplot(plot_data, aes(x = time / 365, y = estimate, color = strata)) +
     geom_step(aes(linetype = strata), linewidth = 1) +
     scale_color_manual(values = c(global_cols[1:2])) +
     # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
@@ -73,7 +73,7 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
     theme(
       text = element_text(size = 20, face = "bold"),
       legend.position = "none",
-      axis.text = element_text(color = "black"),
+      axis.text = element_text(color = "black")
     ) +
     labs(x = "Follow-up (years)", y = ylab) +
     annotate("text",
@@ -81,22 +81,39 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
       hjust = 0, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
     ) +
     annotate("text",
-      x = textadjx + 3.2, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_crude,
+      x = textadjx + 3.7, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_crude,
       hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
     ) +
     annotate("text",
-      x = textadjx + 6.5, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_adj,
+      x = textadjx + 7, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_adj,
       hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
     )
+
+  p25 <- ggplot(plot_data, aes(x = time / 365, y = estimate, color = strata)) +
+    geom_step(aes(linetype = strata), linewidth = 1) +
+    scale_color_manual(values = c(global_cols[1:2])) +
+    # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
+    # scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = c(0, 1), expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, fuyears, 2), limits = c(0, fuyears)) +
+    scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = smally) +
+    theme_classic() +
+    theme(
+      text = element_text(size = 20 * 0.7, face = "bold"),
+      legend.position = "none",
+      axis.title.y = element_blank()
+    ) +
+    labs(x = "Follow-up (years)", y = ylab)
+
+  p <- p + inset_element(p25, left = 0.01, bottom = 0.3, right = 0.4, top = 0.6)
 
   # n at risk
   table_data <- plot_data %>%
     filter(
-      time %in% c(seq(0, fuyears, 2) * 366)
+      time %in% c(seq(0, fuyears, 2) * 365)
     )
 
-  t <- ggplot(table_data, aes(y = strata, x = time / 365.25)) +
-    geom_text(aes(label = n.risk), size = 6, fontface = "bold", colour = rep(global_cols[2:1], each = 8)) +
+  t <- ggplot(table_data, aes(y = strata, x = time / 365)) +
+    geom_text(aes(label = n.risk), size = 6, fontface = "bold", colour = rep(global_cols[2:1], each = 7)) +
     # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
     # scale_y_discrete(expand = c(0, 0)) +
     scale_x_continuous(breaks = seq(0, fuyears, 2), limits = c(0, fuyears)) +
@@ -137,7 +154,8 @@ nr <- 1
 kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
-  eventname = outvars$shortname[nr]
+  eventname = outvars$shortname[nr], 
+  smally = c(0, 0.3)
 )
 nr <- 2
 kmfunc(
@@ -173,6 +191,7 @@ nr <- 7
 kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
-  eventname = outvars$shortname[nr]
+  eventname = outvars$shortname[nr], 
+  smally = c(0, 0.3)
 )
 ```

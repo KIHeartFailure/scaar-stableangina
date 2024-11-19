@@ -20,7 +20,7 @@ outcomesfunc_inner <- function(data = sdata, time, event, eventname, xvar = "cas
   out[1, 1] <- eventname
 
   ## incidence rate
-  out[1, 2] <- "No events, sum py, incidence/100py (95% CI)"
+  out[1, 2] <- "No events, sum py, incidence/1000py (95% CI)"
 
   # 1 row - incidence
   ev <- data %>%
@@ -30,7 +30,7 @@ outcomesfunc_inner <- function(data = sdata, time, event, eventname, xvar = "cas
       s = sum(!!sym(time) / 365.25),
       .groups = "drop"
     )
-  r <- pois.exact(x = ev$ev, pt = ev$s / 100)
+  r <- pois.exact(x = ev$ev, pt = ev$s / 1000)
 
   out[1, 3:(nlevs + 2)] <- paste0(
     ev$ev, ", ",
@@ -291,8 +291,8 @@ outcomesfunc(data = sdata %>% filter(year_cat == "2011-2015"), fgall = F)
 #| cache: true
 #| cache.comments: false
 #| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2016-2020"
+#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2016-2019"
 #| tbl-pos: "H"
 
-outcomesfunc(data = sdata %>% filter(year_cat == "2016-2020"), fgall = F)
+outcomesfunc(data = sdata %>% filter(year_cat == "2016-2019"), fgall = F)
 ```

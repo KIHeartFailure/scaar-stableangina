@@ -218,7 +218,7 @@ sdata <- create_sosvar(
   diavar = HDIA,
   type = "out",
   name = "hospmi",
-  diakod = " I21| I22",
+  diakod = " I21| I22| I200",
   censdate = censdtm,
   valsclass = "fac",
   warnings = FALSE

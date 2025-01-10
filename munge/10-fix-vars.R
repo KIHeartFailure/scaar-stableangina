@@ -1,8 +1,6 @@
-segvars <- paste0("SEGMENT", 1:20)
-
 sdata <- sdata %>%
   mutate(
-    scaar_stenos = factor(pmax(!!!syms(segvars)), levels = 0:2, labels = c("-", "0-29", "30-49")),
+    scaar_stenos = factor(pmax(!!!syms(segvars)), levels = 1:2, labels = c("0-29", "30-49")),
     scb_region = case_when(
       Lan == "01" ~ "Stockholm",
       Lan == "03" ~ "Uppsala",
@@ -66,7 +64,6 @@ sdata <- sdata %>%
       TRUE ~ sos_com_hypertension
     ),
     sos_out_comp = if_else(sos_out_deathcv == "Yes" |
-      sos_out_hosphf == "Yes" |
       sos_out_hospmi == "Yes" |
       sos_out_hospstroke == "Yes", "Yes", "No"),
     sos_outtime_comp = pmin(sos_outtime_hospmi, sos_outtime_hosphf),

@@ -34,6 +34,7 @@ save(
   file = here("data/clean-data/meta1"),
   list = c(
     "flow",
+    "segvars", 
     "deathmeta"
   )
 )

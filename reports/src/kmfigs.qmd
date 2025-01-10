@@ -7,7 +7,7 @@ coxvars <- modvars
 coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
 
 kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
-                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0, smally = c(0, .1)) {
+                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0, smally = c(0, 0.01, 0.02)) {
   levs <- levels(data %>% pull(case))
   nlevs <- length(levs)
 
@@ -89,20 +89,20 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
       hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
     )
 
-  p25 <- ggplot(plot_data, aes(x = time / 365, y = estimate, color = strata)) +
+  p25 <- ggplot(plot_data, aes(x = time / 30.5, y = estimate, color = strata)) +
     geom_step(aes(linetype = strata), linewidth = 1) +
     scale_color_manual(values = c(global_cols[1:2])) +
     # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
     # scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = c(0, 1), expand = c(0, 0)) +
-    scale_x_continuous(breaks = seq(0, fuyears, 2), limits = c(0, fuyears)) +
-    scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = smally) +
+    scale_x_continuous(breaks = seq(0, 12, 2), limits = c(0, 12)) +
+    scale_y_continuous(labels = scales::label_percent(suffix = ""), breaks = smally, limits = c(min(smally), max(smally))) +
     theme_classic() +
     theme(
       text = element_text(size = 20 * 0.7, face = "bold"),
       legend.position = "none",
       axis.title.y = element_blank()
     ) +
-    labs(x = "Follow-up (years)", y = ylab)
+    labs(x = "Follow-up (months)", y = ylab)
 
   p <- p + inset_element(p25, left = 0.01, bottom = 0.3, right = 0.4, top = 0.6)
 
@@ -154,8 +154,7 @@ nr <- 1
 kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
-  eventname = outvars$shortname[nr], 
-  smally = c(0, 0.3)
+  eventname = outvars$shortname[nr]
 )
 nr <- 2
 kmfunc(
@@ -191,7 +190,6 @@ nr <- 7
 kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
-  eventname = outvars$shortname[nr], 
-  smally = c(0, 0.3)
+  eventname = outvars$shortname[nr]
 )
 ```

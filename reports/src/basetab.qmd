@@ -318,34 +318,12 @@ basetabfunc(data = sdata %>% filter(scb_age_cat == ">80"), novars = "scb_age_cat
 ```
 
 ```{r}
-#| label: tbl-base-year20062010
+#| label: tbl-base-yearexc20062010
 #| cache: true
 #| cache.comments: false
 #| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Year of inclusion 2006-2010"
+#| tbl-cap: "Baseline characteristics - Year of inclusion 2011-2020 (excluding 2006-2010, sensitivity analysis)"
 #| tbl-pos: "H"
 
-basetabfunc(data = sdata %>% filter(year_cat == "2006-2010"), novars = "year_cat")
-```
-
-```{r}
-#| label: tbl-base-year20112015
-#| cache: true
-#| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Year of inclusion 2011-2015"
-#| tbl-pos: "H"
-
-basetabfunc(data = sdata %>% filter(year_cat == "2011-2015"), novars = "year_cat")
-```
-
-```{r}
-#| label: tbl-base-year20162020
-#| cache: true
-#| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Year of inclusion 2016-2019"
-#| tbl-pos: "H"
-
-basetabfunc(data = sdata %>% filter(year_cat == "2016-2019"), novars = "year_cat")
+basetabfunc(data = sdata %>% filter(year_cat != "2006-2010"))
 ```

@@ -66,7 +66,7 @@ outvars <- tibble(
   var = c("sos_out_comp", "sos_out_death", "sos_out_deathcv", "sos_out_hosphf", "sos_out_hospmi", "sos_out_hospstroke", "sos_out_revasc"),
   time = c("sos_outtime_comp", "sos_outtime_death", "sos_outtime_death", "sos_outtime_hosphf", "sos_outtime_hospmi", "sos_outtime_hospstroke", "sos_outtime_revasc"),
   name = c(
-    "Composite of cardiovascular death, myocardial infarction, stroke or hospitalisation for heart failure", "Death",
+    "Composite of cardiovascular death, myocardial infarction or stroke", "Death",
     "Cardiovascular death", "First heart failure hospitalization", "First myocardial infarction", "First stroke", "First revascularization"
   ),
   shortname = c("Composite", "Death", "CV death", "1st HF hospitalization", "1st MI", "1st stroke", "1st revascularization"),

@@ -1,0 +1,254 @@
+```{r}
+#| label: tbl-outcomescheckadjinc
+#| cache: true
+#| cache.comments: false
+#| tbl-cap: "Check association between outcomes and case/control when adding 1 variable at a time"
+#| tbl-pos: "H"
+
+coxvars <- modvars
+coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+
+outcomescheckfunc <- function(time, event, eventname) {
+  nrows <- length(coxvars)
+  out <- data.frame(matrix(NA, ncol = 3, nrow = nrows))
+  colnames(out) <- c("Outcome", "Adjusted for variable", "HR (95%)")
+
+  out[1, 1] <- eventname
+
+  for (i in seq_along(coxvars)) {
+    out[i, 2] <- coxvars[i]
+    mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case + ", coxvars[i], "+ frailty(lopnrcase)")),
+      data = sdata
+    ))
+
+    out[i, 3] <- paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  }
+  return(out)
+}
+
+out1 <- outcomescheckfunc(
+  time = outvars$time[1],
+  event = outvars$var[1],
+  eventname = outvars$name[1]
+)
+out2 <- outcomescheckfunc(
+  time = outvars$time[2],
+  event = outvars$var[2],
+  eventname = outvars$name[2]
+)
+out3 <- outcomescheckfunc(
+  time = outvars$time[3],
+  event = outvars$var[3],
+  eventname = outvars$name[3]
+)
+out4 <- outcomescheckfunc(
+  time = outvars$time[4],
+  event = outvars$var[4],
+  eventname = outvars$name[4]
+)
+nr <- 5
+out5 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 6
+out6 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 7
+out7 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+outall <- rbind(out1, out2, out3, out4, out5, out6, out7)
+
+make_one_xlsxsheet(outall)
+
+default_kable(outall,
+  longtable = TRUE,
+  font_size = 7.5
+)
+```
+
+```{r}
+#| label: tbl-outcomescheckadjexcl
+#| cache: true
+#| cache.comments: false
+#| tbl-cap: "Check association between outcomes and case/control when excluding 1 variable at a time"
+#| tbl-pos: "H"
+#|
+coxvars <- modvars
+coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+
+outcomescheckfunc <- function(time, event, eventname) {
+  nrows <- length(coxvars)
+  out <- data.frame(matrix(NA, ncol = 3, nrow = nrows))
+  colnames(out) <- c("Outcome", "NOT adjusted for variable", "HR (95%)")
+
+  out[1, 1] <- eventname
+
+  for (i in seq_along(coxvars)) {
+    out[i, 2] <- coxvars[i]
+    coxvars2 <- setdiff(coxvars, coxvars[i])
+    mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case + ", paste(coxvars2, collapse = " + "), "+ frailty(lopnrcase)")),
+      data = sdata
+    ))
+
+    out[i, 3] <- paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  }
+  return(out)
+}
+
+out1 <- outcomescheckfunc(
+  time = outvars$time[1],
+  event = outvars$var[1],
+  eventname = outvars$name[1]
+)
+out2 <- outcomescheckfunc(
+  time = outvars$time[2],
+  event = outvars$var[2],
+  eventname = outvars$name[2]
+)
+out3 <- outcomescheckfunc(
+  time = outvars$time[3],
+  event = outvars$var[3],
+  eventname = outvars$name[3]
+)
+out4 <- outcomescheckfunc(
+  time = outvars$time[4],
+  event = outvars$var[4],
+  eventname = outvars$name[4]
+)
+nr <- 5
+out5 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 6
+out6 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 7
+out7 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+outall <- rbind(out1, out2, out3, out4, out5, out6, out7)
+
+make_one_xlsxsheet(outall)
+
+default_kable(outall,
+  longtable = TRUE,
+  font_size = 7.5
+)
+```
+
+```{r}
+#| label: tbl-outcomescheck2years
+#| cache: true
+#| cache.comments: false
+#| tbl-cap: "Check association between outcomes and case/control when only including the first 2 years follow-up"
+#| tbl-pos: "H"
+
+coxvars <- modvars
+coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+
+futimes <- c(1, 2, 3, 4, 6, 8, 10)
+
+outcomescheckfunc <- function(time, event, eventname) {
+  nrows <- length(futimes)
+  out <- data.frame(matrix(NA, ncol = 3, nrow = nrows))
+  colnames(out) <- c("Outcome", "Up untill time", "HR (95%)")
+
+  out[1, 1] <- eventname
+
+  for (i in seq_along(futimes)) {
+    fu <- 365 * futimes[i]
+    sdata <- cut_surv(sdata, sos_out_comp, sos_outtime_comp, fu, cuttime = TRUE, censval = "No", rename = "_tmp")
+    sdata <- cut_surv(sdata, sos_out_deathcv, sos_outtime_death, fu, cuttime = F, censval = "No", rename = "_tmp")
+    sdata <- cut_surv(sdata, sos_out_death, sos_outtime_death, fu, cuttime = T, censval = "No", rename = "_tmp")
+    sdata <- cut_surv(sdata, sos_out_hosphf, sos_outtime_hosphf, fu, cuttime = TRUE, censval = "No", rename = "_tmp")
+    sdata <- cut_surv(sdata, sos_out_hospmi, sos_outtime_hospmi, fu, cuttime = TRUE, censval = "No", rename = "_tmp")
+    sdata <- cut_surv(sdata, sos_out_hospstroke, sos_outtime_hospstroke, fu, cuttime = TRUE, censval = "No", rename = "_tmp")
+    sdata <- cut_surv(sdata, sos_out_revasc, sos_outtime_revasc, fu, cuttime = TRUE, censval = "No", rename = "_tmp")
+
+    out[i, 2] <- paste0(futimes[i], " years")
+    mod <- summary(coxph(formula(paste0("Surv(", time, "_tmp,", event, "_tmp == 'Yes') ~ case + ", paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)")),
+      data = sdata
+    ))
+
+    out[i, 3] <- paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  }
+  return(out)
+}
+
+out1 <- outcomescheckfunc(
+  time = outvars$time[1],
+  event = outvars$var[1],
+  eventname = outvars$name[1]
+)
+out2 <- outcomescheckfunc(
+  time = outvars$time[2],
+  event = outvars$var[2],
+  eventname = outvars$name[2]
+)
+out3 <- outcomescheckfunc(
+  time = outvars$time[3],
+  event = outvars$var[3],
+  eventname = outvars$name[3]
+)
+out4 <- outcomescheckfunc(
+  time = outvars$time[4],
+  event = outvars$var[4],
+  eventname = outvars$name[4]
+)
+nr <- 5
+out5 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 6
+out6 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 7
+out7 <- outcomescheckfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+outall <- rbind(out1, out2, out3, out4, out5, out6, out7)
+
+make_one_xlsxsheet(outall)
+
+default_kable(outall,
+  longtable = TRUE,
+  font_size = 7.5
+)
+```

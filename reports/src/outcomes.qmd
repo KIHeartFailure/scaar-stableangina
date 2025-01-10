@@ -265,34 +265,12 @@ outcomesfunc(data = sdata %>% filter(scb_age_cat == ">80"), fgall = F)
 ```
 
 ```{r}
-#| label: tbl-outcomes-year20062010
+#| label: tbl-outcomes-yearexc20062010
 #| cache: true
 #| cache.comments: false
 #| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2006-2010"
+#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2011-2020 (excluding 2006-2010, sensitivity analysis)"
 #| tbl-pos: "H"
 
-outcomesfunc(data = sdata %>% filter(year_cat == "2006-2010"), fgall = F)
-```
-
-```{r}
-#| label: tbl-outcomes-year20112015
-#| cache: true
-#| cache.comments: false
-#| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2011-2015"
-#| tbl-pos: "H"
-
-outcomesfunc(data = sdata %>% filter(year_cat == "2011-2015"), fgall = F)
-```
-
-```{r}
-#| label: tbl-outcomes-year20162020
-#| cache: true
-#| cache.comments: false
-#| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2016-2019"
-#| tbl-pos: "H"
-
-outcomesfunc(data = sdata %>% filter(year_cat == "2016-2019"), fgall = F)
+outcomesfunc(data = sdata %>% filter(year_cat != "2006-2010"), fgall = F)
 ```

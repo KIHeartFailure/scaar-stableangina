@@ -2,7 +2,7 @@
 
 sdatauseforimp <- sdata %>%
   filter(case == "Case") %>%
-  select(lopnr, indexdtm, !!!syms(modvars_case), year, contains(outvars$var), !!!syms(outvars$time))
+  select(lopnr, indexdtm, !!!syms(modvars_case), year, scb_age, contains(outvars$var), !!!syms(outvars$time))
 
 noimpvars <- names(sdatauseforimp)[!names(sdatauseforimp) %in% modvars_case]
 

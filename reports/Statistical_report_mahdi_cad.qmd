@@ -89,7 +89,7 @@ default_kable(flow)
 First patient in: `r min(sdata$INTERDAT, na.rm = T)` and last patient in: `r max(sdata$INTERDAT, na.rm = T)` 
 from approximately `r sdata %>% distinct(CENTREID) %>% count() %>% pull(n)` enrolling centers. 
 
-Baseline is set to the intervention date + `r global_indexplus` days. 
+Baseline is set to the intervention date + `r global_indexplus` days. The `r global_indexplus` days is in order to take into account that medications can be collected from the pharmacy up to `r global_indexplus` days after the intervention and to avoid that the outcomes are baseline events. However, hospitalizations were linked together (if a hospitalization started on the same day as a previous hospitalization they were considered as the same hospitalization in order to take into account moves between clinics). ÄNDRA TILL 7 dagar????
 
 ```{r}
 #| label: tbl-ncontrols
@@ -290,6 +290,10 @@ Subgroups in same or diferent plots?
 
 Om ni vill testa om det finns en skillnad mellan könen avseende associationen mellan utfall och case/controll bör använda interaktionsanalyser. Beror lite på hur ni vill presentera/beskriva det. 
 
+### Check association between outcomes and case/control
+
+{{< include src/outcomes_checkadjustment.qmd >}}
+
 \clearpage
 
 ## Association between primary outcome and baseline characteristics for cases
@@ -298,9 +302,9 @@ Om ni vill testa om det finns en skillnad mellan könen avseende associationen m
 
 JAG ÄR LITE OSÄKER PÅ modellern med För stenosgrad 0-29 vs 30-49%. Det blir lite knasigt för utfallet kommer ju då att ha skett INNAN flera av variablerna. Ex läkemedel är vid tidpunkten för index + 92 dagar. 
 
-### Association between outcomes and time for cases
+### Association between outcomes and age for cases
 
-{{< include src/timespline.qmd >}}
+{{< include src/agespline.qmd >}}
 
 # Reproducibility
 

@@ -5,10 +5,13 @@ flow <- tibble(
   n = nrow(scaar)
 )
 
-segvars <- paste0("SEGMENT", 1:20)
+#segnr <- c(1:3,5:9,11,12,14)
+segnr <- c(1:14,18:20)
+segvars <- paste0("SEGMENT", segnr)
+segvarstmp <- paste0("SEGMENT", 1:20)
 
 scaar <- scaar %>%
-  select(LopNr, INTERDAT, !!!syms(segvars), INDIKATION, HEIGHT, WEIGHT, SMOKING_STATUS, d_yob, d_GENDER, CSS, CENTREID, REGTYP) %>%
+  select(LopNr, INTERDAT, !!!syms(segvarstmp), INDIKATION, HEIGHT, WEIGHT, SMOKING_STATUS, d_yob, d_GENDER, CSS, CENTREID, REGTYP) %>%
   rename(lopnr = LopNr) %>%
   mutate(
     year = year(INTERDAT),
@@ -35,9 +38,9 @@ flow <- add_row(flow,
 )
 
 sdata <- sdata %>%
-  filter(INTERDAT <= ymd("2019-12-31"))
+  filter(INTERDAT <= ymd("2020-12-31"))
 flow <- add_row(flow,
-  criteria = "<= 2019",
+  criteria = "<= 2020",
   n = nrow(sdata)
 )
 
@@ -58,7 +61,7 @@ flow <- add_row(flow,
 sdata <- sdata %>%
   filter(if_all(all_of(c("INDIKATION", "REGTYP", segvars)), ~ !is.na(.)))
 flow <- add_row(flow,
-  criteria = "No missing data for INDIKATION, SEGMENTS1-20 or REGTYP",
+  criteria = paste0("No missing data for INDIKATION, SEGMENTS ", paste0(segnr, collapse = ", "), " or REGTYP"),
   n = nrow(sdata)
 )
 
@@ -71,10 +74,10 @@ flow <- add_row(flow,
 )
 
 sdata <- sdata %>%
-  filter(if_all(all_of(segvars), ~ . <= 2)) # %>%
+  filter(if_all(all_of(segvars), ~ . %in% c(1, 2))) # %>%
 # select(-contains("SEGMENT"))
 flow <- add_row(flow,
-  criteria = "All 20 segments <=49% (-, 0-29%, 30-49%)",
+  criteria = paste0("Segments ", paste0(segnr, collapse = ", ") ," <=49% (0-29%, 30-49%)"),
   n = nrow(sdata)
 )
 

@@ -242,3 +242,4 @@ sdata <- create_sosvar(
 
 outcommeta <- metaout
 rm(metaout)
+rm(patreg)

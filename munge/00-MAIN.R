@@ -34,7 +34,7 @@ save(
   file = here("data/clean-data/meta1"),
   list = c(
     "flow",
-    "segvars", 
+    "segvars",
     "deathmeta"
   )
 )
@@ -42,14 +42,14 @@ save(
 # socioec
 lisa <- read.fst(paste0(fstpath, "lisa.fst"))
 source(here("munge/06-scb-lisa.R"))
-write.fst(sdata, paste0(fstpath, "sdata.fst"))
+write.fst(sdata, paste0(fstpath, "sdata1.fst"))
 
 # comorbs + outcomes
 source(here::here("setup/setup.R"))
 patreg <- read.fst(paste0(fstpath, "patreg.fst"))
-sdata <- read.fst(paste0(fstpath, "sdata.fst"))
+sdata <- read.fst(paste0(fstpath, "sdata1.fst"))
 source(here("munge/07-npr-outcom.R"))
-write.fst(sdata, paste0(fstpath, "sdata.fst"))
+write.fst(sdata, paste0(fstpath, "sdata2.fst"))
 
 save(
   file = here("data/clean-data/meta2"),
@@ -60,9 +60,9 @@ save(
 
 # medications
 source(here::here("setup/setup.R"))
-sdata <- read.fst(paste0(fstpath, "sdata.fst"))
+sdata <- read.fst(paste0(fstpath, "sdata2.fst"))
 source(here("munge/08-pdr-med.R"))
-write.fst(sdata, paste0(fstpath, "sdata.fst"))
+write.fst(sdata, paste0(fstpath, "sdata3.fst"))
 
 save(
   file = here("data/clean-data/meta3"),
@@ -73,17 +73,19 @@ save(
 
 # fixvars and imp
 source(here::here("setup/setup.R"))
-sdata <- read.fst(paste0(fstpath, "sdata.fst"))
+sdata <- read.fst(paste0(fstpath, "sdata3.fst"))
 
-metavars <- read.xlsx("F:/STATISTIK/Projects/20210525_shfdb4/dm/metadata/meta_variables.xlsx")
+metavars <- read.xlsx("P:/k2_stat_heartfailure/Projects/20210525_shfdb4/dm/metadata/meta_variables.xlsx")
 load(here("data/clean-data/meta1"))
 load(here("data/clean-data/meta2"))
 load(here("data/clean-data/meta3"))
 
 source(here("munge/09-vars.R"))
 source(here("munge/10-fix-vars.R"))
-source(here("munge/11-mi.R"))
-write.fst(sdata, paste0(fstpath, "sdata.fst"))
+source(here("munge/11-pdr-medtime.R"))
+source(here("munge/12-create-fgdata.R"))
+source(here("munge/13-mi.R"))
+write.fst(sdata, paste0(fstpath, "sdata4.fst"))
 
 # Cache/save data ---------------------------------------------------------
 
@@ -93,6 +95,7 @@ save(
     "sdata",
     "impsdata",
     "sdatauseforimp",
+    "sdatafg_comp",
     "flow",
     "modvars",
     "modvars_case",
@@ -103,7 +106,8 @@ save(
     "metavars",
     "metalm",
     "deathmeta",
-    "outcommeta"
+    "outcommeta",
+    ls()[str_detect(ls(), "^medtimedata_")]
   )
 )
 

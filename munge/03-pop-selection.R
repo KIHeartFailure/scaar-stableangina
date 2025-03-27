@@ -5,8 +5,8 @@ flow <- tibble(
   n = nrow(scaar)
 )
 
-#segnr <- c(1:3,5:9,11,12,14)
-segnr <- c(1:14,18:20)
+# segnr <- c(1:3,5:9,11,12,14)
+segnr <- c(1:14, 18:20)
 segvars <- paste0("SEGMENT", segnr)
 segvarstmp <- paste0("SEGMENT", 1:20)
 
@@ -38,9 +38,9 @@ flow <- add_row(flow,
 )
 
 sdata <- sdata %>%
-  filter(INTERDAT <= ymd("2020-12-31"))
+  filter(INTERDAT <= ymd("2019-12-31"))
 flow <- add_row(flow,
-  criteria = "<= 2020",
+  criteria = "<= 2019",
   n = nrow(sdata)
 )
 
@@ -77,7 +77,7 @@ sdata <- sdata %>%
   filter(if_all(all_of(segvars), ~ . %in% c(1, 2))) # %>%
 # select(-contains("SEGMENT"))
 flow <- add_row(flow,
-  criteria = paste0("Segments ", paste0(segnr, collapse = ", ") ," <=49% (0-29%, 30-49%)"),
+  criteria = paste0("Segments ", paste0(segnr, collapse = ", "), " <=49% (0-29%, 30-49%)"),
   n = nrow(sdata)
 )
 

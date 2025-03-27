@@ -27,8 +27,11 @@ tabvars <- c(
   "sos_lm_rasiarni",
   "sos_lm_bbl",
   "sos_lm_diuretic",
-  "sos_lm_statin",
   "sos_lm_ccb",
+  "sos_lm_antikoagulantia",
+  "sos_lm_asap2y12i",
+  "sos_lm_NOAK_waran",
+  "sos_lm_antidiabetic",
 
   # socec
   "scb_maritalstatus",
@@ -47,7 +50,8 @@ tabvars_not_in_mod <- c(
   "scb_dispincome_cat",
   "scb_education",
   "scb_maritalstatus",
-  "scaar_stenos"
+  "scaar_stenos",
+  "sos_com_diabetes"
 )
 
 modvars <- c(tabvars[!(tabvars %in% tabvars_not_in_mod)], "scb_educationimp", "scb_dispincomeimp_cat", "scb_maritalstatusimp")
@@ -56,7 +60,8 @@ stratavars <- c()
 tabvars_not_in_mod <- c(
   "year", "scb_age",
   "scaar_bmi",
-  "sos_com_ckd"
+  "sos_com_ckd",
+  "sos_com_diabetes"
 )
 
 modvars_case <- tabvars[!(tabvars %in% tabvars_not_in_mod)]

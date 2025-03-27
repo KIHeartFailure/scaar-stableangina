@@ -7,7 +7,7 @@ coxvars <- modvars
 coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
 
 kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
-                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0, smally = c(0, 0.01, 0.02)) {
+                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0, smally = c(0, 0.01, 0.02, 0.03)) {
   levs <- levels(data %>% pull(case))
   nlevs <- length(levs)
 
@@ -94,7 +94,7 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
     scale_color_manual(values = c(global_cols[1:2])) +
     # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
     # scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = c(0, 1), expand = c(0, 0)) +
-    scale_x_continuous(breaks = seq(0, 12, 2), limits = c(0, 12)) +
+    scale_x_continuous(breaks = seq(0, 24, 4), limits = c(0, 24)) +
     scale_y_continuous(labels = scales::label_percent(suffix = ""), breaks = smally, limits = c(min(smally), max(smally))) +
     theme_classic() +
     theme(

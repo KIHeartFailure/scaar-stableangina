@@ -69,7 +69,9 @@ sdata <- sdata %>%
     sos_outtime_comp = pmin(sos_outtime_hospmi, sos_outtime_hosphf),
     sos_outtime_comp = pmin(sos_outtime_comp, sos_outtime_hospstroke),
     sos_outtime_comp = pmin(sos_outtime_comp, sos_outtime_revasc),
-    sos_out_comp_cr = create_crevent(sos_out_comp, sos_out_death, eventvalues = c("Yes", "Yes")),
+    sos_out_comp_cr = factor(create_crevent(sos_out_comp, sos_out_death, eventvalues = c("Yes", "Yes")),
+      levels = 0:2, labels = c("cens", "comp", "death")
+    ),
   )
 
 # income
@@ -170,6 +172,6 @@ sdata <- sdata %>%
   mutate(across(where(is_character), factor))
 
 ## Create numeric variables needed for comp risk model
-for (i in seq_along(c("case", modvars))) {
-  sdata <- create_crvar(sdata, c("case", modvars)[i])
-}
+# for (i in seq_along(c("case", modvars))) {
+#  sdata <- create_crvar(sdata, c("case", modvars)[i])
+# }

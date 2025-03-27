@@ -89,7 +89,7 @@ default_kable(flow)
 First patient in: `r min(sdata$INTERDAT, na.rm = T)` and last patient in: `r max(sdata$INTERDAT, na.rm = T)` 
 from approximately `r sdata %>% distinct(CENTREID) %>% count() %>% pull(n)` enrolling centers. 
 
-Baseline is set to the intervention date + `r global_indexplus` days. The `r global_indexplus` days is in order to take into account that medications can be collected from the pharmacy up to `r global_indexplus` days after the intervention and to avoid that the outcomes are baseline events. However, hospitalizations were linked together (if a hospitalization started on the same day as a previous hospitalization they were considered as the same hospitalization in order to take into account moves between clinics). ÄNDRA TILL 7 dagar????
+Baseline is set to the intervention date + `r global_indexplus` days. The `r global_indexplus` days is in order to take into account that medications can be collected from the pharmacy up to `r global_indexplus` days after the intervention and to avoid that the outcomes are baseline events. 
 
 ```{r}
 #| label: tbl-ncontrols
@@ -109,19 +109,27 @@ default_kable(ncontrols, scale_down = F)
 
 ### Controls
 
-The original control population was matched to another population by year of birth, sex and county of residence assuming no previous indication (ANGE VILKEN INDIKATION). 
+The original control population was matched to another population by year of birth, sex and county of residence assuming no previous indication (ANGE VILKEN INDIKATION). The re-matching could therefore cause a bias since the risk of INDIKATION will be smaller in this pool of persons compared to the general population. 
 
-For this study the 2 controls / case were re-matched by year of birth, sex and county of residence and without prior registration in SCAAR or indication according to the National Patient Register (Procedure codes FNA-H or diagnosis codes I01.2, I09.I21–22 (MI), I20.0 (IAP), I01.2, I09.0, I40, I41, I42.3, I51.4 (Myocarditis). 
+For this study the 2 controls / case were re-matched by year of birth, sex and county of residence and without prior registration in SCAAR or indication according to the National Patient Register (Procedure codes FNA-H or diagnosis codes I01.2, I09.I21–22 (MI), I20.0 (IAP), I01.2, I09.0, I40, I41, I42.3, I51.4 (Myocarditis). The control can however experience either of these conditions later during follow-up and thereby theoretically be included twice in the analyses, partly as a control for another case and partly, later on, as a case. 
 
 ### Variables
 
 {{< include src/vars.qmd >}}
 
-KOLLA IGENOM KODER NOGGRANT. OBSERVERA ATT ALLA ICD DU SPECADE INTE FINNS MED DÅ INTE ÄR BESTÄLLDA ENLIGT SOS SPECEN (SE TIDIGARE SKICKAT DOKUMENT). Detta måste kollas. 
+KOLLA IGENOM KODER NOGGRANT. OBSERVERA ATT ALLA ICD DU SPECADE INTE FINNS MED DÅ INTE ÄR BESTÄLLDA ENLIGT SOS SPECEN (SE TIDIGARE SKICKAT DOKUMENT) SÅ DU MÅSTE GÅ IGENOM OCH KONTROLLERA DETTA. 
 
 HAR ÄVEN LAGT TILL NÅGRA COMORB. SE OM OK. 
 
 Names for case (stable angina???)/control??? For tables/figs.
+
+ÅTERKOM MED LÄMPLIGA (ENGELSKA OCH KORTA) NAMN PÅ MEDICINERNA
+
+Kolla även om variablerna som ska inkluderas i modellerna stämmer med vad du tänkte. 
+
+### Time-dependent covariates (medications)
+
+A number of medications were included as time-dependent covariates in the cox models. The medications were derived from The National Prescribed Drug Register. If a person not on the medication at baseline purchased any of the respective medications during follow-up the person is from that time considered to be on the respective medication. A prescription in Sweden usually lasts 3 months and to make allowance for non-compliance, pill-stocking etc. a time-limit of 5 months was set were if a new prescription had not been purchased from the last dispensation within this time-frame the person was defined as not on the medication. If a new prescription is filled at a later date the person is yet again to be considered as on the respective medication. 
 
 # Statistical analysis 
 
@@ -135,26 +143,29 @@ comparisons were made and therefore the results should be viewed with care.
 
 ```{r}
 missedu <- sdata %>%
-  count(is.na(scb_education)) %>%
+  mutate(isna = ynfac(if_else(is.na(scb_education), 1, 0))) %>%
+  count(isna, .drop = F) %>%
   mutate(np = paste0(n, " (", fn(n / sum(n) * 100, 1), "%)")) %>%
-  filter(`is.na(scb_education)`) %>%
+  filter(isna == "Yes") %>%
   pull(np)
 missmar <- sdata %>%
-  count(is.na(scb_maritalstatus)) %>%
+  mutate(isna = ynfac(if_else(is.na(scb_maritalstatus), 1, 0))) %>%
+  count(isna, .drop = F) %>%
   mutate(np = paste0(n, " (", fn(n / sum(n) * 100, 1), "%)")) %>%
-  filter(`is.na(scb_maritalstatus)`) %>%
+  filter(isna == "Yes") %>%
   pull(np)
 missinc <- sdata %>%
-  count(is.na(scb_dispincome)) %>%
+  mutate(isna = ynfac(if_else(is.na(scb_dispincome), 1, 0))) %>%
+  count(isna, .drop = F) %>%
   mutate(np = paste0(n, " (", fn(n / sum(n) * 100, 1), "%)")) %>%
-  filter(`is.na(scb_dispincome)`) %>%
+  filter(isna == "Yes") %>%
   pull(np)
 ```
 
 In the analyses where cases were compared to their matched controls absence of a prescription/ICD/procedure code was considered as No, the proportion of 
 missing data was low and only occurred for education in `r missedu` persons, for marital status in `r missmar` persons and for income in `r missinc` persons. 
 Due to the low % of missing data no multiple imputation was performed but type (for education and marital status) and median within year 
-(disposable income) were imputed when used in the multivariable models. 
+(disposable income) were imputed when used in the multivariable models. NOTE TO SELF: Check if any missing marital and income!!!!!
 
 For the analyses where only cases were investigated (where the variables of interest also where taken from SCAAR) 
 missing data was imputed with multiple imputation (n = 10) using mice [@mice] 
@@ -174,7 +185,7 @@ differences between groups with the chi-square test.
 Continuous variables are presented with median [first quartile-third quartile] and tested for 
 differences between groups with the Kruskal-Wallis test. 
 
-Ändra detta till stand diff
+Note to self: Ändra detta till stand diff?
 
 ## Outcomes
 
@@ -188,7 +199,7 @@ The following outcomes are considered:
 - `r paste0(outvars$name[6], " (", outvars$shortname[6], ")")`
 - `r paste0(outvars$name[7])`
 
-Data were censored at `r global_endfollowup`, emigration from Sweden or at death from other causes than the event. 
+Data were censored at `r global_endfollowup`, emigration from Sweden or at death if itself not an event. 
 
 ### Association between outcomes and cases/controls
 
@@ -197,6 +208,11 @@ Time to first events were presented with cumulative incidence curves by case/con
 Cox proportional hazards regressions were used to model the time to first event including the matched pairs as a frailty term in the model.
 Crude and adjusted analyses were performed where adjustment was performed for 
 variables indicated in @tbl-base. And, by design due to matching, also for age, sex and county of residence. 
+
+Further, as a consistency analysis, Blodfettsänkande/Trombocythämmare/antikoagulantia (Strokeprevention), bbl, rasi/arni,  ccb, P2Y12i/asa, noak/waran, antidiabetic were modelled as time-dependepent covariates in the model. 
+
+As a consistency analysis for the primary outcome, a sub-distributional hazards model[@fg] was used, 
+where deaths not defined as an event were treated as competing events (not performed for the subgroups).
 
 ### Association between primary outcome and basline characteristics for cases
 
@@ -211,7 +227,7 @@ variables indicated in @tbl-base.
 
 ### Assumptions
 
-TO BE CHECKED!!!! The proportional hazards assumption was investigated using the scaled Schoenfeld 
+Note to self: TO BE CHECKED!!!! The proportional hazards assumption was investigated using the scaled Schoenfeld 
 residuals leading to that `r paste0(stratavars, collapse =", ")` were stratified for in the models.  
 Possible outliers were visually inspected by plotting the dfbetas. 
 
@@ -290,17 +306,13 @@ Subgroups in same or diferent plots?
 
 Om ni vill testa om det finns en skillnad mellan könen avseende associationen mellan utfall och case/controll bör använda interaktionsanalyser. Beror lite på hur ni vill presentera/beskriva det. 
 
-### Check association between outcomes and case/control
-
-{{< include src/outcomes_checkadjustment.qmd >}}
-
 \clearpage
 
 ## Association between primary outcome and baseline characteristics for cases
 
 {{< include src/predictors.qmd >}}
 
-JAG ÄR LITE OSÄKER PÅ modellern med För stenosgrad 0-29 vs 30-49%. Det blir lite knasigt för utfallet kommer ju då att ha skett INNAN flera av variablerna. Ex läkemedel är vid tidpunkten för index + 92 dagar. 
+JAG ÄR LITE OSÄKER PÅ modellern med För stenosgrad 0-29 vs 30-49%. Det blir lite knasigt för utfallet kommer ju då att ha skett INNAN flera av variablerna (då index är + 14 dagar efter intervention).  
 
 ### Association between outcomes and age for cases
 

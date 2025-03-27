@@ -15,4 +15,4 @@ fstpath <- paste0("./data/fst-data/")
 
 global_endfollowup <- ymd("2019-12-31")
 
-global_indexplus <- 14 #92
+global_indexplus <- 14 # 92

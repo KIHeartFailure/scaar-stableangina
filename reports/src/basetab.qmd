@@ -9,7 +9,7 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
 
   if (str_detect(x, "scaar_")) {
     pmis <- data %>%
-      filter(!is.na(!!sym(stratavar)) & case == "Case") %>%
+      filter(!is.na(!!sym(stratavar)) & case == "ANOCA") %>%
       mutate(mis = factor(if_else(is.na(!!sym(x)), 1, 0), levels = 0:1)) %>%
       count(mis, .drop = F) %>%
       mutate(pmis = fn(n / sum(n) * 100, catdig)) %>%
@@ -43,18 +43,24 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
       select(!!sym(stratavar), out, level) %>%
       pivot_wider(names_from = !!sym(stratavar), values_from = out)
 
-    # p-value
+    # stand diff
     check <- tmp %>%
       count(!!sym(stratavar), !!sym(x))
+    levs <- out %>% pull(level)
+    nlevs <- length(levs)
     if (nrow(check) >= 4) {
-      p <- fn(chisq.test(tmp %>% pull(!!sym(stratavar)), tmp %>% pull(!!sym(x)))$p.value, p = T, dig = 3)
+      if (nlevs == 2) {
+        p <- fn(stddiff.binary(tmp, stratavar, x)[1, "stddiff"], 2)
+      }
+      if (nlevs > 2) {
+        p <- fn(stddiff.category(tmp, stratavar, x)[1, "stddiff"], 2)
+      }
+      # p <- fn(chisq.test(tmp %>% pull(!!sym(stratavar)), tmp %>% pull(!!sym(x)))$p.value, p = T, dig = 3)
     } else {
       p <- "-"
     }
 
     # if levels No, Yes only present Yes
-    levs <- out %>% pull(level)
-    nlevs <- length(levs)
     if (nlevs == 2 & all(levs %in% c("No", "Yes"))) {
       out <- out %>%
         filter(level == "Yes") %>%
@@ -108,11 +114,14 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
       select(!!sym(stratavar), out) %>%
       pivot_wider(names_from = !!sym(stratavar), values_from = out)
 
-    # p-value
+    # stand diff
     check <- tmp %>%
       count(!!sym(stratavar), !is.na(!!sym(x)))
     if (nrow(check) >= 2) {
-      p <- fn(kruskal.test(formula(paste0(x, " ~ ", stratavar)), data = tmp)$p.value, p = T, dig = 3)
+      tmp <- tmp %>%
+        mutate(rankx = rank(!!sym(x)))
+      p <- fn(stddiff.numeric(tmp, stratavar, "rankx")[1, "stddiff"], 2)
+      # p <- fn(kruskal.test(formula(paste0(x, " ~ ", stratavar)), data = tmp)$p.value, p = T, dig = 3)
     } else {
       p <- "-"
     }
@@ -188,7 +197,7 @@ basetabfunc <- function(data, novars = NULL) {
     ) %>%
     unite(footnote, starts_with("footnote"), sep = "")
 
-  cn <- c("Variable", "Missing (%)", levels(data %>% pull(case)), "p-value")
+  cn <- c("Variable", "Missing (%)", levels(data %>% pull(case)), "Standardized difference")
 
   footnotetext <- c(
     "Included in adjusted regression models in the analyses comparing cases and controls.",
@@ -243,7 +252,7 @@ basetabfunc <- function(data, novars = NULL) {
       footnote_order = c("general", "symbol", "alphabet"),
       general_title = "",
       general = c(
-        "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis test."
+        "Categorical variables are presented with n (%) and continuous variables with median [q1-q3]."
       ),
       alphabet = footnotetext,
       threeparttable = T
@@ -263,61 +272,6 @@ basetabfunc(data = sdata)
 ```
 
 ```{r}
-#| label: tbl-base-male
-#| cache: true
-#| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Male"
-#| tbl-pos: "H"
-
-basetabfunc(data = sdata %>% filter(scb_sex == "Male"), novars = "scb_sex")
-```
-
-```{r}
-#| label: tbl-base-female
-#| cache: true
-#| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Female"
-#| tbl-pos: "H"
-
-basetabfunc(data = sdata %>% filter(scb_sex == "Female"), novars = "scb_sex")
-```
-
-```{r}
-#| label: tbl-base-age_65
-#| cache: true
-#| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Age < 65"
-#| tbl-pos: "H"
-
-basetabfunc(data = sdata %>% filter(scb_age_cat == "<65"), novars = "scb_age_cat")
-```
-
-```{r}
-#| label: tbl-base-age_6580
-#| cache: true
-#| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Age 65-80"
-#| tbl-pos: "H"
-
-basetabfunc(data = sdata %>% filter(scb_age_cat == "65-80"), novars = "scb_age_cat")
-```
-
-```{r}
-#| label: tbl-base-age_80
-#| cache: true
-#| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Age > 80"
-#| tbl-pos: "H"
-
-basetabfunc(data = sdata %>% filter(scb_age_cat == ">80"), novars = "scb_age_cat")
-```
-
-```{r}
 #| label: tbl-base-yearexc20062010
 #| cache: true
 #| cache.comments: false
@@ -325,5 +279,5 @@ basetabfunc(data = sdata %>% filter(scb_age_cat == ">80"), novars = "scb_age_cat
 #| tbl-cap: "Baseline characteristics - Year of inclusion 2011-2019 (excluding 2006-2010, sensitivity analysis)"
 #| tbl-pos: "H"
 
-basetabfunc(data = sdata %>% filter(year_cat != "2006-2010"))
+basetabfunc(data = sdata %>% filter(year_cat != "2006-2010") %>% mutate(year_cat = droplevels(year_cat)))
 ```

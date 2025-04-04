@@ -21,6 +21,9 @@ library(here)
 # desk stat
 library(tableone)
 
+# stand diff
+library(stddiff)
+
 # outcomes
 library(survival)
 library(MASS) # neg bin model

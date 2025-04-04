@@ -1,7 +1,7 @@
 # Impute missing values ---------------------------------------------------
 
 sdatauseforimp <- sdata %>%
-  filter(case == "Case") %>%
+  filter(case == "ANOCA") %>%
   select(lopnr, indexdtm, !!!syms(modvars_case), year, scb_age, contains(outvars$var), !!!syms(outvars$time))
 
 noimpvars <- names(sdatauseforimp)[!names(sdatauseforimp) %in% modvars_case]

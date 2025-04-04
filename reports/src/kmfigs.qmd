@@ -3,44 +3,7 @@
 #| cache: true
 #| cache.comments: false
 
-coxvars <- modvars
-coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
-
-kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
-                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0, smally = c(0, 0.01, 0.02, 0.03)) {
-  levs <- levels(data %>% pull(case))
-  nlevs <- length(levs)
-
-  # cox results
-  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case + frailty(lopnrcase)")),
-    data = data
-  ))
-
-  cox_crude <- c(
-    "Crude HR (95% CI)",
-    "reference",
-    paste0(
-      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
-      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
-      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), ")"
-    )
-  )
-
-  coxvars2 <- setdiff(coxvars, novar)
-  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case +", paste(coxvars2, collapse = " + "), "+ frailty(lopnrcase)")),
-    data = data
-  ))
-
-  cox_adj <- c(
-    "Adj HR (95% CI)",
-    "reference",
-    paste0(
-      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
-      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
-      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), ")"
-    )
-  )
-
+kmfunc <- function(data = sdata, time, event, eventname) {
   fit <- survfit(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ case")),
     data = data
   )
@@ -57,9 +20,9 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
     "strata" = s$strata
   ) %>%
     mutate(
-      strata = fct_rev(fct_inorder(str_remove_all(strata, "case="))),
+      strata = fct_rev(fct_inorder(str_remove_all(strata, "case=")))
     )
-  ylim <- c(0, 1)
+  ylim <- c(0, .25)
   ylab <- paste0(eventname, " (%)")
 
   p <- ggplot(plot_data, aes(x = time / 365, y = estimate, color = strata)) +
@@ -75,39 +38,10 @@ kmfunc <- function(data = sdata, time, event, eventname, novar = NULL,
       legend.position = "none",
       axis.text = element_text(color = "black")
     ) +
-    labs(x = "Follow-up (years)", y = ylab) +
-    annotate("text",
-      x = textadjx, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = c("", levs),
-      hjust = 0, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
-    ) +
-    annotate("text",
-      x = textadjx + 3.7, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_crude,
-      hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
-    ) +
-    annotate("text",
-      x = textadjx + 7, y = c(textadjy, textadjy - 0.1, textadjy - 0.2), label = cox_adj,
-      hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[2:1])
-    )
+    labs(x = "Follow-up (years)", y = ylab)
 
-  p25 <- ggplot(plot_data, aes(x = time / 30.5, y = estimate, color = strata)) +
-    geom_step(aes(linetype = strata), linewidth = 1) +
-    scale_color_manual(values = c(global_cols[1:2])) +
-    # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
-    # scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = c(0, 1), expand = c(0, 0)) +
-    scale_x_continuous(breaks = seq(0, 24, 4), limits = c(0, 24)) +
-    scale_y_continuous(labels = scales::label_percent(suffix = ""), breaks = smally, limits = c(min(smally), max(smally))) +
-    theme_classic() +
-    theme(
-      text = element_text(size = 20 * 0.7, face = "bold"),
-      legend.position = "none",
-      axis.title.y = element_blank()
-    ) +
-    labs(x = "Follow-up (months)", y = ylab)
-
-  p <- p + inset_element(p25, left = 0.01, bottom = 0.3, right = 0.4, top = 0.6)
-
-  # n at risk
-  table_data <- plot_data %>%
+    # n at risk
+    table_data <- plot_data %>%
     filter(
       time %in% c(seq(0, fuyears, 2) * 365)
     )
@@ -187,6 +121,12 @@ kmfunc(
   eventname = outvars$shortname[nr]
 )
 nr <- 7
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 8
 kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],

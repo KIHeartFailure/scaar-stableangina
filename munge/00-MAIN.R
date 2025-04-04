@@ -47,7 +47,9 @@ write.fst(sdata, paste0(fstpath, "sdata1.fst"))
 # comorbs + outcomes
 source(here::here("setup/setup.R"))
 patreg <- read.fst(paste0(fstpath, "patreg.fst"))
+scaar <- read.fst("./data/fst-data/scaar.fst")
 sdata <- read.fst(paste0(fstpath, "sdata1.fst"))
+load(here("data/clean-data/meta1"))
 source(here("munge/07-npr-outcom.R"))
 write.fst(sdata, paste0(fstpath, "sdata2.fst"))
 

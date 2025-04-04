@@ -310,5 +310,6 @@ medtimedata_hospmi <- medtimefunc(outvars$time[4], outvars$var[4])
 medtimedata_hospstroke <- medtimefunc(outvars$time[5], outvars$var[5])
 medtimedata_revasc <- medtimefunc(outvars$time[6], outvars$var[6])
 medtimedata_death <- medtimefunc(outvars$time[7], outvars$var[7])
+medtimedata_ca <- medtimefunc(outvars$time[8], outvars$var[8])
 
 rm(list = c("lmall", "lmsel"))

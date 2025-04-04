@@ -68,16 +68,23 @@ modvars_case <- tabvars[!(tabvars %in% tabvars_not_in_mod)]
 stratavars_case <- c()
 
 outvars <- tibble(
-  var = c("sos_out_comp", "sos_out_death", "sos_out_deathcv", "sos_out_hosphf", "sos_out_hospmi", "sos_out_hospstroke", "sos_out_revasc"),
-  time = c("sos_outtime_comp", "sos_outtime_death", "sos_outtime_death", "sos_outtime_hosphf", "sos_outtime_hospmi", "sos_outtime_hospstroke", "sos_outtime_revasc"),
-  name = c(
-    "Composite of cardiovascular death, myocardial infarction or stroke", "Death",
-    "Cardiovascular death", "First heart failure hospitalization", "First myocardial infarction", "First stroke", "First revascularization"
+  var = c(
+    "sos_out_comp", "sos_out_death", "sos_out_deathcv", "sos_out_hosphf", "sos_out_hospmi",
+    "sos_out_hospstroke", "sos_out_revasc", "scaar_out_ca"
   ),
-  shortname = c("Composite", "Death", "CV death", "1st HF hospitalization", "1st MI", "1st stroke", "1st revascularization"),
-  composite = c(T, F, F, F, F, F, F),
-  primary = c(T, F, F, F, F, F, F),
-  order = c(1, 7, 2, 3, 4, 5, 6)
+  time = c(
+    "sos_outtime_comp", "sos_outtime_death", "sos_outtime_death", "sos_outtime_hosphf", "sos_outtime_hospmi",
+    "sos_outtime_hospstroke", "sos_outtime_revasc", "scaar_outtime_ca"
+  ),
+  name = c(
+    "Composite of cardiovascular death, heart failure hospitalization, myocardial infarction or stroke", "Death",
+    "Cardiovascular death", "First heart failure hospitalization", "First myocardial infarction", "First stroke", "First revascularization",
+    "Repeated diagnostic coronary angiography"
+  ),
+  shortname = c("Composite", "Death", "CV death", "1st HF hospitalization", "1st MI", "1st stroke", "1st revascularization", "Coronary angiography"),
+  composite = c(T, F, F, F, F, F, F, F),
+  primary = c(T, F, F, F, F, F, F, F),
+  order = c(1, 7, 2, 3, 4, 5, 6, 8)
 ) %>%
   arrange(order)
 
@@ -96,8 +103,11 @@ metavars <- bind_rows(
       "sos_lm_rasiarni",
       "sos_lm_bbl",
       "sos_lm_diuretic",
-      "sos_lm_statin",
       "sos_lm_ccb",
+      "sos_lm_antikoagulantia",
+      "sos_lm_asap2y12i",
+      "sos_lm_NOAK_waran",
+      "sos_lm_antidiabetic",
       "scb_sex",
       "scb_age"
     ),
@@ -106,17 +116,20 @@ metavars <- bind_rows(
       "Smoking",
       "BMI",
       "CSS",
-      "Degree of stenosis (??? kallas det så?)",
+      "Degree of stenosis",
       "Heart failure",
       "CKD",
       "RASi/ARNi",
       "Beta-blockers",
       "Diuretics",
-      "Statin",
-      "Calcium antagonists",
+      "Calcium channel blockers",
+      "Lipid lowering",
+      "Antiplatelet therapy",
+      "Anticoagulation",
+      "Glucose lowering",
       "Sex",
       "Age"
     ),
-    units = c(rep(NA, 2), "kg/m²", rep(NA, 10), "years")
+    units = c(rep(NA, 2), "kg/m²", rep(NA, 13), "years")
   )
 )

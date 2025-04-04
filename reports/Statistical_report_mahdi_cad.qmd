@@ -97,7 +97,7 @@ Baseline is set to the intervention date + `r global_indexplus` days. The `r glo
 #| tbl-pos: "H"
 
 ncontrols <- sdata %>%
-  filter(case == "Case") %>%
+  filter(case == "ANOCA") %>%
   count(ncontrols) %>%
   select(n, ncontrols)
 names(ncontrols) <- c("N cases with", "N controls")
@@ -116,16 +116,6 @@ For this study the 2 controls / case were re-matched by year of birth, sex and c
 ### Variables
 
 {{< include src/vars.qmd >}}
-
-KOLLA IGENOM KODER NOGGRANT. OBSERVERA ATT ALLA ICD DU SPECADE INTE FINNS MED DÅ INTE ÄR BESTÄLLDA ENLIGT SOS SPECEN (SE TIDIGARE SKICKAT DOKUMENT) SÅ DU MÅSTE GÅ IGENOM OCH KONTROLLERA DETTA. 
-
-HAR ÄVEN LAGT TILL NÅGRA COMORB. SE OM OK. 
-
-Names for case (stable angina???)/control??? For tables/figs.
-
-ÅTERKOM MED LÄMPLIGA (ENGELSKA OCH KORTA) NAMN PÅ MEDICINERNA
-
-Kolla även om variablerna som ska inkluderas i modellerna stämmer med vad du tänkte. 
 
 ### Time-dependent covariates (medications)
 
@@ -185,8 +175,6 @@ differences between groups with the chi-square test.
 Continuous variables are presented with median [first quartile-third quartile] and tested for 
 differences between groups with the Kruskal-Wallis test. 
 
-Note to self: Ändra detta till stand diff?
-
 ## Outcomes
 
 The following outcomes are considered: 
@@ -198,6 +186,7 @@ The following outcomes are considered:
 - `r paste0(outvars$name[5], " (", outvars$shortname[5], ")")`
 - `r paste0(outvars$name[6], " (", outvars$shortname[6], ")")`
 - `r paste0(outvars$name[7])`
+- `r paste0(outvars$name[8], " (", outvars$shortname[8], ")")`
 
 Data were censored at `r global_endfollowup`, emigration from Sweden or at death if itself not an event. 
 
@@ -209,21 +198,16 @@ Cox proportional hazards regressions were used to model the time to first event 
 Crude and adjusted analyses were performed where adjustment was performed for 
 variables indicated in @tbl-base. And, by design due to matching, also for age, sex and county of residence. 
 
-Further, as a consistency analysis, Blodfettsänkande/Trombocythämmare/antikoagulantia (Strokeprevention), bbl, rasi/arni,  ccb, P2Y12i/asa, noak/waran, antidiabetic were modelled as time-dependepent covariates in the model. 
+Further, as a consistency analysis, Lipid lowering, glucose lowering, anticoagulation, Antiplatelet therapy, bbl, rasi/arni, ccb were modelled as time-dependepent covariates in the model. 
 
 As a consistency analysis for the primary outcome, a sub-distributional hazards model[@fg] was used, 
 where deaths not defined as an event were treated as competing events (not performed for the subgroups).
 
 ### Association between primary outcome and basline characteristics for cases
 
-For the cases only cox proportional hazards regressions were used to model 
+For the ANOCA cases only cox proportional hazards regressions were used to model 
 the association between partly the primary outcome and partly revascularization and the variables indicated in @tbl-base. 
 Note that the variables collected in SCAAR are at the date of intervention whereas the other variables are from the date of intervention + `r global_indexplus` days. 
-
-For the cases only cox proportional hazards regressions were used to model 
-the association between the respective outcomes and year of intervention where year was modeled using a restricted cubic spline with 5 knots. 
-Crude and adjusted analyses were performed where adjustment was performed for 
-variables indicated in @tbl-base. 
 
 ### Assumptions
 
@@ -277,7 +261,7 @@ sumsurv <- sdata %>%
   pull(sumpy)
 
 medsurv_case <- sdata %>%
-  filter(case == "Case") %>%
+  filter(case == "ANOCA") %>%
   summarise(
     med = fn(median(sos_outtime_death / 365.25), dig = 0),
     min = fn(min(sos_outtime_death / 365.25), dig = 0),
@@ -302,21 +286,13 @@ The median (min-max) follow-up is
 
 {{< include src/kmfigs.qmd >}}
 
-Subgroups in same or diferent plots?
-
-Om ni vill testa om det finns en skillnad mellan könen avseende associationen mellan utfall och case/controll bör använda interaktionsanalyser. Beror lite på hur ni vill presentera/beskriva det. 
-
 \clearpage
 
-## Association between primary outcome and baseline characteristics for cases
+## Association between primary outcome and baseline characteristics for ANOCA only
 
 {{< include src/predictors.qmd >}}
 
-JAG ÄR LITE OSÄKER PÅ modellern med För stenosgrad 0-29 vs 30-49%. Det blir lite knasigt för utfallet kommer ju då att ha skett INNAN flera av variablerna (då index är + 14 dagar efter intervention).  
-
-### Association between outcomes and age for cases
-
-{{< include src/agespline.qmd >}}
+\clearpage
 
 # Reproducibility
 

@@ -151,7 +151,7 @@ sdata <- left_join(
   filter(!is.na(Kon) & !is.na(birthyear))
 
 flow <- add_row(flow,
-  criteria = "Exist in RTB",
+  criteria = "Exist in Total Population Register",
   n = nrow(sdata)
 )
 

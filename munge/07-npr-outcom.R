@@ -10,7 +10,7 @@ sdata <- create_sosvar(
   diavar = DIA_all,
   type = "com",
   name = "hypertension",
-  diakod = " I1[0-5]",
+  diakod = " I10| I11(?!0)| I1[2-5]",
   stoptime = -5 * 365.25,
   valsclass = "fac",
   warnings = FALSE
@@ -26,7 +26,7 @@ sdata <- create_sosvar(
   diavar = DIA_all,
   type = "com",
   name = "hf",
-  diakod = " I50",
+  diakod = " I50| I110",
   stoptime = -5 * 365.25,
   valsclass = "fac",
   warnings = FALSE
@@ -42,7 +42,7 @@ sdata <- create_sosvar(
   diavar = DIA_all,
   type = "com",
   name = "copd",
-  diakod = " J4[0-4]",
+  diakod = " J4[1-4]",
   stoptime = -5 * 365.25,
   valsclass = "fac",
   warnings = FALSE
@@ -89,8 +89,8 @@ sdata <- create_sosvar(
   diavar = DIA_all,
   type = "com",
   name = "stroke",
-  diakod = " 43[0-4]| 438| I6[0-4]| I69[0-4]",
-  # stoptime = -5 * 365.25,
+  diakod = " I6[0-4]| I69[0-4]",
+  stoptime = -5 * 365.25,
   valsclass = "fac",
   warnings = FALSE
 )
@@ -105,7 +105,7 @@ sdata <- create_sosvar(
   opvar = OP_all,
   type = "com",
   name = "ckd",
-  diakod = " N1[7-9]| Z491| Z492",
+  diakod = " N18| N19| N26| Q61| Z49| Z992| Z940",
   opkod = " KAS00| KAS10| KAS20| DR014| DR015| DR016| DR020| DR012| DR013| DR023| DR024| TJA33| TJA35",
   stoptime = -5 * 365.25,
   valsclass = "fac",
@@ -186,7 +186,7 @@ sdata <- create_sosvar(
   diavar = HDIA,
   type = "out",
   name = "hosphf",
-  diakod = " I50",
+  diakod = " I50| I110",
   censdate = censdtm,
   valsclass = "fac",
   warnings = FALSE
@@ -243,3 +243,59 @@ sdata <- create_sosvar(
 outcommeta <- metaout
 rm(metaout)
 rm(patreg)
+
+# outcome from scaar
+scaarout <- scaar %>%
+  select(LopNr, INTERDAT, !!!syms(segvars), REGTYP) %>%
+  rename(lopnr = LopNr) %>%
+  filter(if_all(all_of(segvars), ~ . %in% c(NA, 0, 1, 2))) %>%
+  filter(REGTYP == 1) %>%
+  select(lopnr, INTERDAT)
+
+scaarout2 <- left_join(sdata %>% select(lopnr, case, indexdtm, censdtm),
+  scaarout,
+  by = "lopnr"
+) %>%
+  filter(INTERDAT > indexdtm & INTERDAT <= censdtm) %>%
+  group_by(lopnr, case) %>%
+  arrange(INTERDAT) %>%
+  slice(1) %>%
+  ungroup() %>%
+  rename(scaaroutdtm = INTERDAT) %>%
+  select(-censdtm)
+
+
+sdata <- left_join(sdata, scaarout2, by = c("lopnr", "case", "indexdtm")) %>%
+  mutate(
+    scaar_out_ca = ynfac(if_else(!is.na(scaaroutdtm), 1, 0)),
+    scaaroutdtm = coalesce(scaaroutdtm, censdtm),
+    scaar_outtime_ca = as.numeric(scaaroutdtm - indexdtm)
+  )
+
+# check!!! remove!!!
+scaaroutcheck <- scaar %>%
+  select(LopNr, INTERDAT, !!!syms(segvars), REGTYP) %>%
+  rename(lopnr = LopNr) %>%
+  filter(if_all(all_of(segvars), ~ . %in% c(1, 2))) %>%
+  filter(REGTYP == 1) %>%
+  select(lopnr, INTERDAT)
+
+scaaroutcheck2 <- left_join(sdata %>% select(lopnr, case, indexdtm, censdtm),
+  scaaroutcheck,
+  by = "lopnr"
+) %>%
+  filter(INTERDAT > indexdtm & INTERDAT <= censdtm) %>%
+  group_by(lopnr, case) %>%
+  arrange(INTERDAT) %>%
+  slice(1) %>%
+  ungroup() %>%
+  rename(scaaroutcheckdtm = INTERDAT) %>%
+  select(-censdtm)
+
+
+sdata <- left_join(sdata, scaaroutcheck2, by = c("lopnr", "case", "indexdtm")) %>%
+  mutate(
+    scaar_out_cacheck = ynfac(if_else(!is.na(scaaroutcheckdtm), 1, 0)),
+    scaaroutcheckdtm = coalesce(scaaroutcheckdtm, censdtm),
+    scaar_outtime_cacheck = as.numeric(scaaroutcheckdtm - indexdtm)
+  )

@@ -6,9 +6,11 @@
 coxvars <- modvars_case
 coxvars[modvars_case %in% stratavars_case] <- paste0("strata(", coxvars[modvars_case %in% stratavars_case], ")")
 
-predictorsfunc <- function(time, event, xbreaks) {
+predictorsfunc <- function(time, event, xbreaks, novar = NULL) {
+  coxvars2 <- setdiff(coxvars, novar)
+
   mod <- summary(pool(with(impsdata, coxph(formula(paste0(
-    "Surv(", time, ",", event, " == 'Yes') ~ ", paste(coxvars, collapse = " + ")
+    "Surv(", time, ",", event, " == 'Yes') ~ ", paste(coxvars2, collapse = " + ")
   ))))))
 
   out <- tibble(
@@ -147,6 +149,7 @@ predictorsfunc(
 predictorsfunc(
   time = outvars$time[6],
   event = outvars$var[6],
-  xbreaks = c(0.1, 0.5, 1, 2, 4, 6)
+  xbreaks = c(0.1, 0.5, 1, 2, 4, 6),
+  novar = "scaar_stenos"
 )
 ```

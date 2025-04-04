@@ -135,6 +135,7 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
     timedata_hospmi <- medtimedata_hospmi
     timedata_hospstroke <- medtimedata_hospstroke
     timedata_revasc <- medtimedata_revasc
+    timedata_ca <- medtimedata_ca
   } else {
     data <- sdata %>% filter(!!sym(var) %in% c(val))
     timedata_comp <- medtimedata_comp %>% filter(!!sym(var) %in% c(val))
@@ -144,6 +145,7 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
     timedata_hospmi <- medtimedata_hospmi %>% filter(!!sym(var) %in% c(val))
     timedata_hospstroke <- medtimedata_hospstroke %>% filter(!!sym(var) %in% c(val))
     timedata_revasc <- medtimedata_revasc %>% filter(!!sym(var) %in% c(val))
+    timedata_ca <- medtimedata_ca %>% filter(!!sym(var) %in% c(val))
   }
   out1 <- outcomesfunc_inner(
     data = data,
@@ -211,7 +213,26 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
     fg = F,
     timedata = timedata_death
   )
-  outall <- rbind(out1, out2, out3, out4, out5, out6, out7)
+  nr <- 8
+  out8 <- outcomesfunc_inner(
+    data = data,
+    time = outvars$time[nr],
+    event = outvars$var[nr],
+    eventname = outvars$name[nr],
+    novar = novar,
+    fg = F,
+    timedata = timedata_ca
+  )
+  out9 <- outcomesfunc_inner(
+    data = data,
+    time = "scaar_outtime_cacheck",
+    event = "scaar_out_cacheck",
+    eventname = "Check CA without -/missing",
+    novar = novar,
+    fg = F,
+    timedata = timedata_ca
+  )
+  outall <- rbind(out1, out2, out3, out4, out5, out6, out7, out8, out9)
 
   make_one_xlsxsheet(outall)
 
@@ -233,61 +254,6 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
 #| tbl-pos: "H"
 
 outcomesfunc(var = NULL, fgall = T)
-```
-
-```{r}
-#| label: tbl-outcomes-male
-#| cache: true
-#| cache.comments: false
-#| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Male"
-#| tbl-pos: "H"
-
-outcomesfunc(var = "scb_sex", val = "Male", fgall = F)
-```
-
-```{r}
-#| label: tbl-outcomes-female
-#| cache: true
-#| cache.comments: false
-#| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Female"
-#| tbl-pos: "H"
-
-outcomesfunc(var = "scb_sex", val = "Female", fgall = F)
-```
-
-```{r}
-#| label: tbl-outcomes-age_65
-#| cache: true
-#| cache.comments: false
-#| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Age < 65"
-#| tbl-pos: "H"
-
-outcomesfunc(var = "scb_age_cat", val = "<65", fgall = F)
-```
-
-```{r}
-#| label: tbl-outcomes-age_6580
-#| cache: true
-#| cache.comments: false
-#| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Age 65-80"
-#| tbl-pos: "H"
-
-outcomesfunc(var = "scb_age_cat", val = "65-80", fgall = F)
-```
-
-```{r}
-#| label: tbl-outcomes-age_80
-#| cache: true
-#| cache.comments: false
-#| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Age > 80"
-#| tbl-pos: "H"
-
-outcomesfunc(var = "scb_age_cat", val = ">80", fgall = F)
 ```
 
 ```{r}

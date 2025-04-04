@@ -107,12 +107,12 @@ sdata <- bind_rows(
     ) %>%
     mutate(case = 0)
 ) %>%
-  mutate(case = factor(case, levels = 0:1, labels = c("Control", "Case")))
+  mutate(case = factor(case, levels = 0:1, labels = c("Comparator", "ANOCA")))
 
 sdata <- left_join(
   sdata,
   sdata %>%
-    filter(case == "Control") %>%
+    filter(case == "Comparator") %>%
     group_by(lopnrcase) %>%
     count() %>%
     ungroup(),
@@ -126,5 +126,5 @@ sdata <- sdata %>%
   filter(ncontrols >= 1)
 flow <- add_row(flow,
   criteria = paste0("1-2 matched controls"),
-  n = nrow(sdata %>% filter(case == "Case"))
+  n = nrow(sdata %>% filter(case == "ANOCA"))
 )

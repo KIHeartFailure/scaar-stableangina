@@ -65,7 +65,10 @@ sdata <- sdata %>%
     ),
     sos_out_comp = if_else(sos_out_deathcv == "Yes" |
       sos_out_hospmi == "Yes" |
-      sos_out_hospstroke == "Yes", "Yes", "No"),
+      sos_out_hospstroke == "Yes" |
+      sos_out_hosphf == "Yes",
+    "Yes", "No"
+    ),
     sos_outtime_comp = pmin(sos_outtime_hospmi, sos_outtime_hosphf),
     sos_outtime_comp = pmin(sos_outtime_comp, sos_outtime_hospstroke),
     sos_outtime_comp = pmin(sos_outtime_comp, sos_outtime_revasc),

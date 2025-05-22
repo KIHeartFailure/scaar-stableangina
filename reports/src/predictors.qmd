@@ -3,14 +3,12 @@
 #| cache: true
 #| cache.comments: false
 
-coxvars <- modvars_case
-coxvars[modvars_case %in% stratavars_case] <- paste0("strata(", coxvars[modvars_case %in% stratavars_case], ")")
-
-predictorsfunc <- function(time, event, xbreaks, novar = NULL) {
-  coxvars2 <- setdiff(coxvars, novar)
+predictorsfunc <- function(time, event, xbreaks, novar = NULL, stratavar = NULL) {
+  coxvars <- setdiff(modvars_case, novar)
+  coxvars[coxvars %in% stratavar] <- paste0("strata(", coxvars[coxvars %in% stratavar], ")")
 
   mod <- summary(pool(with(impsdata, coxph(formula(paste0(
-    "Surv(", time, ",", event, " == 'Yes') ~ ", paste(coxvars2, collapse = " + ")
+    "Surv(", time, ",", event, " == 'Yes') ~ ", paste(coxvars, collapse = " + ")
   ))))))
 
   out <- tibble(
@@ -43,11 +41,9 @@ predictorsfunc <- function(time, event, xbreaks, novar = NULL) {
       var = case_when(
         var == "year_cat2011-2015" ~ "Year 2011-2015 vs 2006-2010",
         var == "year_cat2016-2019" ~ "Year 2016-2019 vs 2006-2010",
-        var == "shf_durationhf>=6" ~ "Duration of HF (months) >=6 vs < 6",
         var == "scb_sexFemale" ~ "Female vs Male",
         var == "scb_age_cat65-80" ~ "Age (years) 65-80 vs <65",
         var == "scb_age_cat>80" ~ "Age (years) >80 vs <65",
-        var == "scb_famtypeLiving alone" ~ "Living alone vs Cohabitating",
         var == "scb_educationUniversity" ~ "University vs Compulsory school",
         var == "scb_educationSecondary school" ~ "Secondary vs Compulsory school",
         var == "scb_dispincome_cat2nd tertile within year" ~ "Income 2nd vs 1st tertile",
@@ -133,7 +129,7 @@ predictorsfunc <- function(time, event, xbreaks, novar = NULL) {
 predictorsfunc(
   time = outvars$time[1],
   event = outvars$var[1],
-  xbreaks = c(0.4, 0.5, 1, 2, 4, 7)
+  xbreaks = c(0.5, 1, 2, 4, 6)
 )
 ```
 
@@ -149,7 +145,7 @@ predictorsfunc(
 predictorsfunc(
   time = outvars$time[6],
   event = outvars$var[6],
-  xbreaks = c(0.1, 0.5, 1, 2, 4, 6),
+  xbreaks = c(0.2, 0.5, 1, 2, 4),
   novar = "scaar_stenos"
 )
 ```

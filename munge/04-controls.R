@@ -82,8 +82,6 @@ controlsout <- controls %>%
 set.seed(38478257)
 
 for (i in seq_along(lopnrcase)) {
-  cav <- controls %>%
-    filter(lopnr == lopnrcase[i])
   controlsout <<- bind_rows(
     controlsout,
     controls %>%

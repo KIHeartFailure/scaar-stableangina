@@ -1,124 +1,78 @@
 source(here::here("setup/setup.R"))
 
 # load data
-load(here("data/clean-data/rsdata.RData"))
-
-dataass <- mice::complete(imprsdata, 3)
-dataass <- mice::complete(imprsdata, 6)
-
-# check assumptions for cox models ----------------------------------------
-
-i <- 1
-mod <- coxph(formula(paste0(
-  "Surv(", outvars$time[i], ",", outvars$var[i], " == 'Yes') ~ sos_com_charlsonciage_cat + ", paste(modvars, collapse = " + ")
-)), data = dataass)
-
-# prop hazard assumption
-testpat <- cox.zph(mod)
-print(sig <- testpat$table[testpat$table[, 3] < 0.05, ])
-
-x11()
-plot(testpat[1], resid = T, col = "red")
-plot(testpat[4], resid = T, col = "red")
-plot(testpat[28], resid = T, col = "red")
-
-ggcoxdiagnostics(mod,
-  type = "dfbeta",
-  linear.predictions = FALSE, ggtheme = theme_bw()
-)
-
-i <- 2
-mod <- coxph(formula(paste0(
-  "Surv(", outvars$time[i], ",", outvars$var[i], " == 'Yes') ~ sos_com_charlsonciage_cat + ", paste(modvars, collapse = " + ")
-)), data = dataass)
-
-# prop hazard assumption
-testpat <- cox.zph(mod)
-print(sig <- testpat$table[testpat$table[, 3] < 0.05, ])
-
-x11()
-plot(testpat[1], resid = T, col = "red")
-plot(testpat[4], resid = T, col = "red")
-plot(testpat[28], resid = T, col = "red")
-
-ggcoxdiagnostics(mod,
-  type = "dfbeta",
-  linear.predictions = FALSE, ggtheme = theme_bw()
-)
-
-i <- 3
-mod <- coxph(formula(paste0(
-  "Surv(", outvars$time[i], ",", outvars$var[i], " == 'Yes') ~ sos_com_charlsonciage_cat + ", paste(modvars, collapse = " + ")
-)), data = dataass)
-
-# prop hazard assumption
-testpat <- cox.zph(mod)
-print(sig <- testpat$table[testpat$table[, 3] < 0.05, ])
-
-x11()
-plot(testpat[1], resid = T, col = "red")
-plot(testpat[4], resid = T, col = "red")
-plot(testpat[28], resid = T, col = "red")
+load(here("data/clean-data/sdata.RData"))
 
 
-ggcoxdiagnostics(mod,
-  type = "dfbeta",
-  linear.predictions = FALSE, ggtheme = theme_bw()
-)
+# Check assumptions for cases/controls ------------------------------------
 
-i <- 4
-mod <- coxph(formula(paste0(
-  "Surv(", outvars$time[i], ",", outvars$var[i], " == 'Yes') ~ sos_com_charlsonciage_cat + ", paste(modvars, collapse = " + ")
-)), data = dataass)
+checkass <- function(time, event) {
+  mod <- coxph(
+    formula(paste0(
+      "Surv(", time, ",", event, "== 'Yes') ~ case + ",
+      paste(modvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
+    data = sdata
+  )
 
-# prop hazard assumption
-testpat <- cox.zph(mod)
-print(sig <- testpat$table[testpat$table[, 3] < 0.05, ])
+  # prop hazard assumption
+  testpat <- cox.zph(mod)
+  testpatprint <- as_tibble(testpat$table, rownames = "var") %>%
+    mutate(rownr = 1:n())
+  print(sig <- testpatprint %>% filter(p < 0.05))
 
-x11()
-plot(testpat[1], resid = T, col = "red")
-plot(testpat[4], resid = T, col = "red")
-plot(testpat[28], resid = T, col = "red")
+  for (i in sig$rownr) {
+    x11()
+    plot(testpat[i], resid = T, col = "red")
+  }
 
-ggcoxdiagnostics(mod,
-  type = "dfbeta",
-  linear.predictions = FALSE, ggtheme = theme_bw()
-)
+  # ggcoxdiagnostics(mod,
+  #                 type = "dfbeta",
+  #                 linear.predictions = FALSE, ggtheme = theme_bw()
+  # )
+}
+checkass(time = outvars$time[1], event = outvars$var[1])
+checkass(time = outvars$time[2], event = outvars$var[2])
+checkass(time = outvars$time[3], event = outvars$var[3]) # hf
+checkass(time = outvars$time[4], event = outvars$var[4])
+checkass(time = outvars$time[5], event = outvars$var[5])
+checkass(time = outvars$time[6], event = outvars$var[6])
+checkass(time = outvars$time[7], event = outvars$var[7]) # cancer
+checkass(time = outvars$time[8], event = outvars$var[8]) # case
 
-i <- 5
-mod <- coxph(formula(paste0(
-  "Surv(", outvars$time[i], ",", outvars$var[i], " == 'Yes') ~ sos_com_charlsonciage_cat + ", paste(modvars, collapse = " + ")
-)), data = dataass)
+# Check assumptions for cases ---------------------------------------------
 
-# prop hazard assumption
-testpat <- cox.zph(mod)
-print(sig <- testpat$table[testpat$table[, 3] < 0.05, ])
+checkass <- function(time, event) {
+  mod <- coxph(
+    formula(paste0(
+      "Surv(", time, ",", event, "== 'Yes') ~ ", paste(modvars_case, collapse = " + ")
+    )),
+    data = dataass
+  )
 
-x11()
-plot(testpat[1], resid = T, col = "red")
-plot(testpat[4], resid = T, col = "red")
-plot(testpat[28], resid = T, col = "red")
+  # prop hazard assumption
+  testpat <- cox.zph(mod)
+  testpatprint <- as_tibble(testpat$table, rownames = "var") %>%
+    mutate(rownr = 1:n())
+  print(sig <- testpatprint %>% filter(p < 0.05))
 
-ggcoxdiagnostics(mod,
-  type = "dfbeta",
-  linear.predictions = FALSE, ggtheme = theme_bw()
-)
+  for (i in sig$rownr) {
+    x11()
+    plot(testpat[i], resid = T, col = "red")
+  }
 
-i <- 8
-mod <- coxph(formula(paste0(
-  "Surv(", outvars$time[i], ",", outvars$var[i], " == 'Yes') ~ sos_com_charlsonciage_cat + ", paste(modvars, collapse = " + ")
-)), data = dataass)
+  # ggcoxdiagnostics(mod,
+  #                 type = "dfbeta",
+  #                 linear.predictions = FALSE, ggtheme = theme_bw()
+  # )
+}
 
-# prop hazard assumption
-testpat <- cox.zph(mod)
-print(sig <- testpat$table[testpat$table[, 3] < 0.05, ])
+dataass <- mice::complete(impsdata, 3)
+checkass(time = outvars$time[1], event = outvars$var[1])
+dataass <- mice::complete(impsdata, 6)
+checkass(time = outvars$time[1], event = outvars$var[1])
 
-x11()
-plot(testpat[1], resid = T, col = "red")
-plot(testpat[4], resid = T, col = "red")
-plot(testpat[28], resid = T, col = "red")
-
-ggcoxdiagnostics(mod,
-  type = "dfbeta",
-  linear.predictions = FALSE, ggtheme = theme_bw()
-)
+dataass <- mice::complete(impsdata, 3)
+checkass(time = outvars$time[6], event = outvars$var[6]) # year
+dataass <- mice::complete(impsdata, 6)
+checkass(time = outvars$time[6], event = outvars$var[6]) # year

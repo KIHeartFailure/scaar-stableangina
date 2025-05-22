@@ -40,8 +40,8 @@ kmfunc <- function(data = sdata, time, event, eventname) {
     ) +
     labs(x = "Follow-up (years)", y = ylab)
 
-    # n at risk
-    table_data <- plot_data %>%
+  # n at risk
+  table_data <- plot_data %>%
     filter(
       time %in% c(seq(0, fuyears, 2) * 365)
     )

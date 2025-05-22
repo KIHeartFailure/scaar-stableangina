@@ -248,7 +248,7 @@ rm(patreg)
 scaarout <- scaar %>%
   select(LopNr, INTERDAT, !!!syms(segvars), REGTYP) %>%
   rename(lopnr = LopNr) %>%
-  filter(if_all(all_of(segvars), ~ . %in% c(NA, 0, 1, 2))) %>%
+  filter(if_all(all_of(segvars), ~ . %in% c(1, 2))) %>%
   filter(REGTYP == 1) %>%
   select(lopnr, INTERDAT)
 
@@ -264,38 +264,9 @@ scaarout2 <- left_join(sdata %>% select(lopnr, case, indexdtm, censdtm),
   rename(scaaroutdtm = INTERDAT) %>%
   select(-censdtm)
 
-
 sdata <- left_join(sdata, scaarout2, by = c("lopnr", "case", "indexdtm")) %>%
   mutate(
     scaar_out_ca = ynfac(if_else(!is.na(scaaroutdtm), 1, 0)),
     scaaroutdtm = coalesce(scaaroutdtm, censdtm),
     scaar_outtime_ca = as.numeric(scaaroutdtm - indexdtm)
-  )
-
-# check!!! remove!!!
-scaaroutcheck <- scaar %>%
-  select(LopNr, INTERDAT, !!!syms(segvars), REGTYP) %>%
-  rename(lopnr = LopNr) %>%
-  filter(if_all(all_of(segvars), ~ . %in% c(1, 2))) %>%
-  filter(REGTYP == 1) %>%
-  select(lopnr, INTERDAT)
-
-scaaroutcheck2 <- left_join(sdata %>% select(lopnr, case, indexdtm, censdtm),
-  scaaroutcheck,
-  by = "lopnr"
-) %>%
-  filter(INTERDAT > indexdtm & INTERDAT <= censdtm) %>%
-  group_by(lopnr, case) %>%
-  arrange(INTERDAT) %>%
-  slice(1) %>%
-  ungroup() %>%
-  rename(scaaroutcheckdtm = INTERDAT) %>%
-  select(-censdtm)
-
-
-sdata <- left_join(sdata, scaaroutcheck2, by = c("lopnr", "case", "indexdtm")) %>%
-  mutate(
-    scaar_out_cacheck = ynfac(if_else(!is.na(scaaroutcheckdtm), 1, 0)),
-    scaaroutcheckdtm = coalesce(scaaroutcheckdtm, censdtm),
-    scaar_outtime_cacheck = as.numeric(scaaroutcheckdtm - indexdtm)
   )

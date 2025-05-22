@@ -55,7 +55,6 @@ tabvars_not_in_mod <- c(
 )
 
 modvars <- c(tabvars[!(tabvars %in% tabvars_not_in_mod)], "scb_educationimp", "scb_dispincomeimp_cat", "scb_maritalstatusimp")
-stratavars <- c()
 
 tabvars_not_in_mod <- c(
   "year", "scb_age",
@@ -65,7 +64,6 @@ tabvars_not_in_mod <- c(
 )
 
 modvars_case <- tabvars[!(tabvars %in% tabvars_not_in_mod)]
-stratavars_case <- c()
 
 outvars <- tibble(
   var = c(
@@ -79,9 +77,9 @@ outvars <- tibble(
   name = c(
     "Composite of cardiovascular death, heart failure hospitalization, myocardial infarction or stroke", "Death",
     "Cardiovascular death", "First heart failure hospitalization", "First myocardial infarction", "First stroke", "First revascularization",
-    "Repeated diagnostic coronary angiography"
+    "First repeated diagnostic coronary angiography"
   ),
-  shortname = c("Composite", "Death", "CV death", "1st HF hospitalization", "1st MI", "1st stroke", "1st revascularization", "Coronary angiography"),
+  shortname = c("Composite", "Death", "CV death", "HF hospitalization", "MI", "Stroke", "Revascularization", "Coronary angiography"),
   composite = c(T, F, F, F, F, F, F, F),
   primary = c(T, F, F, F, F, F, F, F),
   order = c(1, 7, 2, 3, 4, 5, 6, 8)

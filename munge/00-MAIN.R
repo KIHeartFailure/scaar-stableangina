@@ -103,8 +103,6 @@ save(
     "modvars_case",
     "tabvars",
     "outvars",
-    "stratavars",
-    "stratavars_case",
     "metavars",
     "metalm",
     "deathmeta",

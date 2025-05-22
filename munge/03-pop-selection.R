@@ -54,7 +54,7 @@ sdata <- anti_join(sdata,
   by = c("lopnr" = "LopNr")
 )
 flow <- add_row(flow,
-  criteria = "Not re-used PINs",
+  criteria = "Exclude patients with re-used PINs",
   n = nrow(sdata)
 )
 
@@ -74,8 +74,7 @@ flow <- add_row(flow,
 )
 
 sdata <- sdata %>%
-  filter(if_all(all_of(segvars), ~ . %in% c(1, 2))) # %>%
-# select(-contains("SEGMENT"))
+  filter(if_all(all_of(segvars), ~ . %in% c(1, 2)))
 flow <- add_row(flow,
   criteria = paste0("Segments ", paste0(segnr, collapse = ", "), " <=49% (0-29%, 30-49%)"),
   n = nrow(sdata)
@@ -102,14 +101,15 @@ sdata <- create_sosvar(
   opkod = " FNA| FNB| FNC| FND| FNE| FNF| FNG| FNH",
   diakod = " I21| I22| I200| I012| I090| I40| I41| I423| I514",
   valsclass = "fac",
-  warnings = FALSE
+  warnings = TRUE
 )
+
 rm(metaout)
 sdata <- sdata %>%
   filter(sos_com_excl_angipci == "No") %>%
   select(-sos_com_excl_angipci)
 flow <- add_row(flow,
-  criteria = paste0("No STEMI/NSTEMI/IAP/MI/Myocarditis (previous or within the first ", global_indexplus, " days)"),
+  criteria = paste0("No previous or within first ", global_indexplus, " days STEMI/NSTEMI/IAP/MI/Myocarditis (KVÅ: FNA-H, ICD-10: I21-2, I200, I012, I090, I40-1, I423, I514)"),
   n = nrow(sdata)
 )
 

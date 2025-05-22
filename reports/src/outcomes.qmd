@@ -3,15 +3,12 @@
 #| cache: true
 #| cache.comments: false
 
-coxvars <- modvars
-coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
-
 outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
-                               fg = T, novar = NULL, timedata) {
+                               fg = T, novar = NULL, stratavar = NULL, timedata) {
   levs <- levels(data %>% pull(!!sym(xvar)))
   nlevs <- length(levs)
 
-  nrows <- if_else(fg, 6, 4)
+  nrows <- if_else(fg, 8, 6)
   out <- data.frame(matrix(NA, ncol = 2 + nlevs, nrow = nrows))
   colnames(out) <- c("Outcome", "Model", levs)
 
@@ -39,7 +36,7 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
   )
 
   ## 2 row - crude regression
-  out[2, 2] <- "Crude Hazard Ratio (95% CI), p-value"
+  out[2, 2] <- "Adjusted (age, sex, region) Hazard Ratio (95% CI), p-value"
   mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ ", xvar, " + frailty(lopnrcase)")),
     data = data
   ))
@@ -54,10 +51,18 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
     )
   )
 
-  ## 3 row - adjusted regression
-  out[3, 2] <- "Adjusted Hazard Ratio (95% CI), p-value"
-  coxvars2 <- setdiff(coxvars, novar)
-  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+", paste(coxvars2, collapse = " + "), "+ frailty(lopnrcase)")),
+  coxvars <- setdiff(modvars, novar)
+  coxvars[coxvars %in% stratavar] <- paste0("strata(", coxvars[coxvars %in% stratavar], ")")
+
+  ## 3 row - adjusted sex, age regression
+  out[3, 2] <- "Adjusted (age, sex, region, comorbidities) Hazard Ratio (95% CI), p-value"
+
+  tmpcoxvars <- coxvars[str_detect(coxvars, "sos_com")]
+  mod <- summary(coxph(
+    formula(paste0(
+      "Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+",
+      paste(tmpcoxvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
     data = data
   ))
 
@@ -71,10 +76,16 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
     )
   )
 
-  ## 4 row - adjusted regression w timedependent meds
-  out[4, 2] <- "Adjusted with timedependent covariates Hazard Ratio (95% CI), p-value"
-  mod <- summary(coxph(formula(paste0("Surv(starttime, stoptime, event == 'Yes') ~ ", xvar, "+", paste(coxvars2, collapse = " + "), "+ frailty(lopnrcase)")),
-    data = timedata
+  ## 4 row - adjusted regression
+  out[4, 2] <- "Adjusted (age, sex, region, comorbidities, medications) Hazard Ratio (95% CI), p-value"
+  tmpcoxvars <- coxvars[str_detect(coxvars, "sos_com|sos_lm")]
+
+  mod <- summary(coxph(
+    formula(paste0(
+      "Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+",
+      paste(tmpcoxvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
+    data = data
   ))
 
   out[4, 3:4] <- c(
@@ -87,13 +98,52 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
     )
   )
 
+  ## 5 row - adjusted regression
+  out[5, 2] <- "Adjusted (age, sex, region, comorbidities, medications, socioeconomics) Hazard Ratio (95% CI), p-value"
+  mod <- summary(coxph(
+    formula(paste0(
+      "Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+",
+      paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
+    data = data
+  ))
+
+  out[5, 3:4] <- c(
+    "reference",
+    paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  )
+  ## 6 row - adjusted regression w timedependent meds
+  out[6, 2] <- "Adjusted (age, sex, region, comorbidities, medications, socioeconomics with timedependent medications) Hazard Ratio (95% CI), p-value"
+  mod <- summary(coxph(
+    formula(paste0(
+      "Surv(starttime, stoptime, event == 'Yes') ~ ", xvar, "+",
+      paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
+    data = timedata
+  ))
+
+  out[6, 3:4] <- c(
+    "reference",
+    paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  )
+
   if (fg) {
-    out[5, 2] <- "Crude Sub-distributional Hazard Ratio (95% CI), p-value"
+    out[7, 2] <- "Adjusted (age, sex, region) Sub-distributional Hazard Ratio (95% CI), p-value"
     mod <- summary(coxph(formula(paste0("Surv(fgstart, fgstop, fgstatus) ~ ", xvar, " + cluster(lopnrcase)")),
       weight = fgwt, data = sdatafg_comp # ok since only main model and only main outcome
     ))
 
-    out[5, 3:4] <- c(
+    out[7, 3:4] <- c(
       "reference",
       paste0(
         fn(mod$conf.int[1, "exp(coef)"], dig = 2),
@@ -103,16 +153,16 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
       )
     )
 
-    out[6, 2] <- "Adjusted Sub-distributional Hazard Ratio (95% CI), p-value"
+    out[8, 2] <- "Adjusted (age, sex, region, comorbidities, medications, socioeconomics) Sub-distributional Hazard Ratio (95% CI), p-value"
     mod <- summary(coxph(
       formula(paste0(
         "Surv(fgstart, fgstop, fgstatus) ~ ", xvar, "+",
-        paste(coxvars2, collapse = " + "), "+ cluster(lopnrcase)"
+        paste(coxvars, collapse = " + "), "+ cluster(lopnrcase)"
       )),
       weight = fgwt, data = sdatafg_comp # ok since only main model and only main outcome
     ))
 
-    out[6, 3:4] <- c(
+    out[8, 3:4] <- c(
       "reference",
       paste0(
         fn(mod$conf.int[1, "exp(coef)"], dig = 2),
@@ -171,6 +221,7 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
     event = outvars$var[3],
     eventname = outvars$name[3],
     novar = novar,
+    stratavar = "sos_com_hf",
     fg = F,
     timedata = timedata_hosphf
   )
@@ -210,6 +261,7 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
     event = outvars$var[nr],
     eventname = outvars$name[nr],
     novar = novar,
+    stratavar = "sos_com_cancer3y",
     fg = F,
     timedata = timedata_death
   )
@@ -223,23 +275,14 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
     fg = F,
     timedata = timedata_ca
   )
-  out9 <- outcomesfunc_inner(
-    data = data,
-    time = "scaar_outtime_cacheck",
-    event = "scaar_out_cacheck",
-    eventname = "Check CA without -/missing",
-    novar = novar,
-    fg = F,
-    timedata = timedata_ca
-  )
-  outall <- rbind(out1, out2, out3, out4, out5, out6, out7, out8, out9)
+  outall <- rbind(out1, out2, out3, out4, out5, out6, out7, out8)
 
   make_one_xlsxsheet(outall)
 
   default_kable(outall) %>%
     footnote(
       general_title = "",
-      general = "Abbreviations: py: person-years; CI: Confidence interval"
+      general = c("Abbreviations: py: person-years; CI: Confidence interval")
     ) %>%
     column_spec(1, width = "6cm")
 }
@@ -250,7 +293,7 @@ outcomesfunc <- function(var, val, novar = NULL, fgall = F) {
 #| cache: true
 #| cache.comments: false
 #| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control"
+#| tbl-cap: "Association between outcomes and ANOCA/Comparator"
 #| tbl-pos: "H"
 
 outcomesfunc(var = NULL, fgall = T)
@@ -261,7 +304,7 @@ outcomesfunc(var = NULL, fgall = T)
 #| cache: true
 #| cache.comments: false
 #| dependson: outcomesfunc
-#| tbl-cap: "Association between outcomes and case/control - Year of inclusion 2011-2019 (excluding 2006-2010, sensitivity analysis)"
+#| tbl-cap: "Association between outcomes and ANOCA/Comparator - Year of inclusion 2011-2019 (excluding 2006-2010, sensitivity analysis)"
 #| tbl-pos: "H"
 
 outcomesfunc(var = "year_cat", val = c("2011-2015", "2016-2019"), fgall = F)

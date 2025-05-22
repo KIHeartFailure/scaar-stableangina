@@ -200,8 +200,8 @@ basetabfunc <- function(data, novars = NULL) {
   cn <- c("Variable", "Missing (%)", levels(data %>% pull(case)), "Standardized difference")
 
   footnotetext <- c(
-    "Included in adjusted regression models in the analyses comparing cases and controls.",
-    "Included in imputation and regression models in the cases only analyses."
+    "Included in adjusted regression models in the analyses comparing ANOCA and the comparator.",
+    "Included in imputation and regression models in the ANOCA cases only analyses."
   )
 
   # excel

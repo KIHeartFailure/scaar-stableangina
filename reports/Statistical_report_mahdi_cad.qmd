@@ -1,6 +1,5 @@
 ---
 title: "Statistical report: Outcomes of stable angina patients with non-obstructive coronary artery disease"
-subtitle: DRAFT
 date: "`r Sys.Date()`"
 cover: static/ki_logo_vert_rgb.png
 editor: source
@@ -69,12 +68,12 @@ pptx <- TRUE
 ## Data sources
 
 SWEDEHEART - SCAAR is an ongoing nationwide quality register. 
-SCAAR was linked with national Swedish registries through the Swedish personal identity number (PIN)[@pin]: 
+SCAAR was linked with the following national Swedish registries through the Swedish personal identity number (PIN)[@pin]: 
 
 - The National Prescribed Drug Register (The National Board of Health and Welfare) for information on medications
-- The National Patient Register (The National Board of Health and Welfare) for additional comorbidities and outcomes
+- The National Patient Register (The National Board of Health and Welfare) for comorbidities and outcomes
 - The Cause of Death Register[@dors] (The National Board of Health and Welfare) for outcomes death
-- Longitudinal integrated database for health insurance and labour market studies (LISA)[@lisa] (Statistics Sweden) for socio-economic factors and selection of controls
+- Longitudinal integrated database for health insurance and labour market studies (LISA)[@lisa] and Total Population Register (TPR) (Statistics Sweden) for socio-economic factors and selection of controls
 
 ## Inclusion/exclusion criteria
 
@@ -83,13 +82,14 @@ SCAAR was linked with national Swedish registries through the Swedish personal i
 #| tbl-cap: Information for flowchart
 #| tbl-pos: "H"
 
-default_kable(flow)
+default_kable(flow, col.names = c("Criteria", "N")) %>%
+  column_spec(1, width = "10cm")
 ```
 
 First patient in: `r min(sdata$INTERDAT, na.rm = T)` and last patient in: `r max(sdata$INTERDAT, na.rm = T)` 
 from approximately `r sdata %>% distinct(CENTREID) %>% count() %>% pull(n)` enrolling centers. 
 
-Baseline is set to the intervention date + `r global_indexplus` days. The `r global_indexplus` days is in order to take into account that medications can be collected from the pharmacy up to `r global_indexplus` days after the intervention and to avoid that the outcomes are baseline events. 
+Baseline is set to the intervention date + `r global_indexplus` days. The `r global_indexplus` days is in order to take into account that medications can be collected from the pharmacy up to `r global_indexplus` days after the intervention and to avoid that the outcomes are baseline events. Note that all time spans in @tbl-vars refer to baseline (so comorbidites and medications are collected up until 14 days after date of intervention). 
 
 ```{r}
 #| label: tbl-ncontrols
@@ -111,7 +111,7 @@ default_kable(ncontrols, scale_down = F)
 
 The original control population was matched to another population by year of birth, sex and county of residence assuming no previous indication (ANGE VILKEN INDIKATION). The re-matching could therefore cause a bias since the risk of INDIKATION will be smaller in this pool of persons compared to the general population. 
 
-For this study the 2 controls / case were re-matched by year of birth, sex and county of residence and without prior registration in SCAAR or indication according to the National Patient Register (Procedure codes FNA-H or diagnosis codes I01.2, I09.I21–22 (MI), I20.0 (IAP), I01.2, I09.0, I40, I41, I42.3, I51.4 (Myocarditis). The control can however experience either of these conditions later during follow-up and thereby theoretically be included twice in the analyses, partly as a control for another case and partly, later on, as a case. 
+For this study the 2 controls / case were re-matched by year of birth, sex and county of residence and without prior registration in SCAAR or indication according to the National Patient Register (Procedure codes FNA-H or diagnosis codes I01.2, I09.0, I21–22 (MI), I20.0 (IAP), I01.2, I09.0, I40, I41, I42.3, I51.4 (Myocarditis). The control can however experience either of these conditions later during follow-up and thereby theoretically be included twice in the analyses, partly as a control for another case and partly, later on, as a case. 
 
 ### Variables
 
@@ -119,7 +119,8 @@ For this study the 2 controls / case were re-matched by year of birth, sex and c
 
 ### Time-dependent covariates (medications)
 
-A number of medications were included as time-dependent covariates in the cox models. The medications were derived from The National Prescribed Drug Register. If a person not on the medication at baseline purchased any of the respective medications during follow-up the person is from that time considered to be on the respective medication. A prescription in Sweden usually lasts 3 months and to make allowance for non-compliance, pill-stocking etc. a time-limit of 5 months was set were if a new prescription had not been purchased from the last dispensation within this time-frame the person was defined as not on the medication. If a new prescription is filled at a later date the person is yet again to be considered as on the respective medication. 
+A number of medications were included as time-dependent covariates in the cox models as a sensitivity analyses. 
+The medications were derived from The National Prescribed Drug Register. If a person not on the medication at baseline purchased any of the respective medications during follow-up the person is from that time considered to be on the respective medication. A prescription in Sweden usually lasts 3 months and to make allowance for non-compliance, pill-stocking etc. a time-limit of 5 months was set were if a new prescription had not been purchased from the last dispensation within this time-frame the person was defined as not on the medication. If a new prescription is filled at a later date the person is yet again to be considered as on the respective medication. 
 
 # Statistical analysis 
 
@@ -152,10 +153,9 @@ missinc <- sdata %>%
   pull(np)
 ```
 
-In the analyses where cases were compared to their matched controls absence of a prescription/ICD/procedure code was considered as No, the proportion of 
-missing data was low and only occurred for education in `r missedu` persons, for marital status in `r missmar` persons and for income in `r missinc` persons. 
-Due to the low % of missing data no multiple imputation was performed but type (for education and marital status) and median within year 
-(disposable income) were imputed when used in the multivariable models. NOTE TO SELF: Check if any missing marital and income!!!!!
+In the analyses where cases were compared to their matched controls absence of a prescription/ICD/procedure code was considered as No, and the proportion of 
+missing data was low and only occurred for education in `r missedu` persons. 
+Due to the low % of missing data no multiple imputation was performed but type (Secondary school) was imputed when used in the multivariable models. 
 
 For the analyses where only cases were investigated (where the variables of interest also where taken from SCAAR) 
 missing data was imputed with multiple imputation (n = 10) using mice [@mice] 
@@ -163,17 +163,11 @@ and Rubin’s rules was used for combining estimates and standard errors across 
 Variables included in the model are indicated in @tbl-base. The primary outcome, `r outvars %>% filter(primary) %>% pull(name)`, was included as the Nelson-Aalen estimator 
 in the model but itself not imputed since it contained no missing values.
 
-## Subgroups
-
-The case/control analyses were also performed according to sex, age-groups and year of inclusion. 
-
 ## Baseline characteristics
 
-Baseline characteristics are presented by cases/controls. 
-Categorical variables are presented with n and percentage and tested for 
-differences between groups with the chi-square test. 
-Continuous variables are presented with median [first quartile-third quartile] and tested for 
-differences between groups with the Kruskal-Wallis test. 
+Baseline characteristics are presented by ANOCA/Comparator. 
+Categorical variables are presented with n and percentage and continuous variables with
+median [first quartile-third quartile]. Standardized differences were used to quantify the differences between groups. 
 
 ## Outcomes
 
@@ -190,20 +184,20 @@ The following outcomes are considered:
 
 Data were censored at `r global_endfollowup`, emigration from Sweden or at death if itself not an event. 
 
-### Association between outcomes and cases/controls
+### Association between outcomes and ANOCA/Comparator
 
-Time to first events were presented with cumulative incidence curves by case/control. 
+Time to first events were presented with cumulative incidence curves by ANOCA/Comparator. 
 
 Cox proportional hazards regressions were used to model the time to first event including the matched pairs as a frailty term in the model.
 Crude and adjusted analyses were performed where adjustment was performed for 
-variables indicated in @tbl-base. And, by design due to matching, also for age, sex and county of residence. 
+variables indicated in @tbl-base. And, by design due to matching, also for age, sex and county of residence. Partly for comorbidities only, partly for comorbidities + medications and partly for all variables indicated. 
 
-Further, as a consistency analysis, Lipid lowering, glucose lowering, anticoagulation, Antiplatelet therapy, bbl, rasi/arni, ccb were modelled as time-dependepent covariates in the model. 
+Further, as a consistency analysis, lipid lowering, glucose lowering, anticoagulation, antiplatelet therapy, Bbl, RASi/ARNi, CCB were modeled as time-dependent covariates in the model. 
 
 As a consistency analysis for the primary outcome, a sub-distributional hazards model[@fg] was used, 
-where deaths not defined as an event were treated as competing events (not performed for the subgroups).
+where deaths not defined as an event were treated as competing events.
 
-### Association between primary outcome and basline characteristics for cases
+### Association between outcomes and basline characteristics for ANOCA only
 
 For the ANOCA cases only cox proportional hazards regressions were used to model 
 the association between partly the primary outcome and partly revascularization and the variables indicated in @tbl-base. 
@@ -211,9 +205,9 @@ Note that the variables collected in SCAAR are at the date of intervention where
 
 ### Assumptions
 
-Note to self: TO BE CHECKED!!!! The proportional hazards assumption was investigated using the scaled Schoenfeld 
-residuals leading to that `r paste0(stratavars, collapse =", ")` were stratified for in the models.  
-Possible outliers were visually inspected by plotting the dfbetas. 
+The proportional hazards assumption was investigated for the fully adjusted models using the scaled Schoenfeld 
+residuals leading to that heart failure was stratified for in the model with HF hospitalization as outcome and cancer was stratified for in the model with outcome Death. Further, ANOCA/Comparator showed non-proportional hazards in the model with outcome Repeated diagnostic coronary angiography and therefore the results for this model should be interpreted with care. Similar with Year in the model with outcome revascularization for the ANOCA cases only. 
+Possible outliers were visually inspected by plotting the dfbetas without cause for action. 
 
 \clearpage
 
@@ -244,7 +238,7 @@ The median (q1-q3) age is `r med` and `r percfem`% females.
 
 \clearpage
 
-## Association between outcomes and cases/controls
+## Association between outcomes and ANOCA/Comparator
 
 ```{r}
 medsurv <- sdata %>%
@@ -271,7 +265,7 @@ medsurv_case <- sdata %>%
   pull(out)
 
 sumsurv_case <- sdata %>%
-  filter(case == "Case") %>%
+  filter(case == "ANOCA") %>%
   summarise(sumpy = fn(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
   pull(sumpy)
 ```

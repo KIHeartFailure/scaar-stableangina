@@ -161,19 +161,16 @@ medtimefunc <- function(outcome, event) {
     medname = "antikoagulantia",
     outcome = outcome
   )
-
   meddata_bbl <- medtimefunc_inner(
     atc = "^(C07AB|C07FB)",
     medname = "bbl",
     outcome = outcome
   )
-
   meddata_rasi <- medtimefunc_inner(
     atc = "^(C09A|C09B|C09C|C09D)",
     medname = "rasiarni",
     outcome = outcome
   )
-
   meddata_ccb <- medtimefunc_inner(
     atc = "^(C08CA|C09BB|C09DB|C09DX01|C07FB)",
     medname = "ccb",
@@ -229,19 +226,16 @@ medtimefunc <- function(outcome, event) {
     medname = "antikoagulantia",
     meddataall = tmp_meddata_all2
   )
-
   meddata_bbl <- medtimefunc_fixtime(
     meddata = meddata_bbl,
     medname = "bbl",
     meddataall = tmp_meddata_all2
   )
-
   meddata_rasi <- medtimefunc_fixtime(
     meddata = meddata_rasi,
     medname = "rasiarni",
     meddataall = tmp_meddata_all2
   )
-
   meddata_ccb <- medtimefunc_fixtime(
     meddata = meddata_ccb,
     medname = "ccb",

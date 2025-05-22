@@ -58,7 +58,7 @@ sdata <- sdata %>%
       CSS == 1 ~ 1,
       CSS %in% c(2, 3, 4) ~ 2
     ),
-    scaar_css = factor(scaar_css, levels = 1:2, labels = c("<=1", ">=2")),
+    scaar_css = factor(scaar_css, levels = 1:2, labels = c("1", ">=2")),
     sos_com_hypertension = case_when(
       sos_com_hf == "No" & (sos_lm_rasiarni == "Yes" | sos_lm_ccb == "Yes") ~ "Yes",
       TRUE ~ sos_com_hypertension

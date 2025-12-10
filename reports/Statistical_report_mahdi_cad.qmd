@@ -282,6 +282,21 @@ The median (min-max) follow-up is
 
 \clearpage
 
+### Residual confounding
+
+In order to assess how robust the association between ANOCA/Comparator and the outcomes are 
+to residual confounding the E-value 
+was calculated [@evalue] for the model Adjusted (age, sex, region, comorbidities, medications, socioeconomics) Hazard Ratio in @tbl-outcomes assuming a rare outcome. 
+The E-value is interpreted as the minimum Risk Ratio 
+that an unmeasured confounder would need to have with both ANOCA/Comparator and 
+the outcome, conditional on the variables currently adjusted 
+for in the model, to fully eliminate the association between ANOCA/Comparator and 
+outcome. 
+
+{{< include src/evalue.qmd >}}
+
+\clearpage
+
 ## Association between primary outcome and baseline characteristics for ANOCA only
 
 {{< include src/predictors.qmd >}}

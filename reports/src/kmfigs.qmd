@@ -80,7 +80,7 @@ kmfunc <- function(data = sdata, time, event, eventname) {
 #| cache.comments: false
 #| dependson: kmfunc
 #| fig-cap: "Cumulative incidence"
-#| fig-subcap: !expr outvars$shortname
+#| fig-subcap: ["Composite", "CV death", "HF hospitalization" ,"MI", "Stroke", "Revascularization", "Death" ,"Coronary angiography"]
 #| layout-ncol: 2
 #| layout-nrow: 2
 

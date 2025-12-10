@@ -31,6 +31,7 @@ library(epitools)
 library(survminer) # check assumptions
 library(splines)
 library(rms)
+library(EValue)
 
 # plots
 library(ggplot2)

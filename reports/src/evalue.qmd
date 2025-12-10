@@ -1,0 +1,95 @@
+```{r}
+#| label: tbl-evalue
+#| cache: true
+#| cache.comments: false
+#| tbl-cap: "E-value for the association between outcomes and ANOCA/Comparator"
+#| tbl-pos: "H"
+
+evaluefunc <- function(time, event, eventname, xvar = "case",
+                       stratavar = NULL, col = 2) {
+  levs <- levels(sdata %>% pull(!!sym(xvar)))
+  nlevs <- length(levs)
+
+  out <- data.frame(matrix(NA, ncol = 2, nrow = 1))
+  colnames(out) <- c("Outcome", "E-value")
+
+  out[1, 1] <- eventname
+
+  coxvars <- modvars
+  coxvars[coxvars %in% stratavar] <- paste0("strata(", coxvars[coxvars %in% stratavar], ")")
+
+  ## 5 row - adjusted regression
+  mod <- summary(coxph(
+    formula(paste0(
+      "Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+",
+      paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
+    data = sdata
+  ))
+
+  evalc <- evalue(HR(mod$conf.int[1, "exp(coef)"], rare = TRUE),
+    lo = mod$conf.int[1, "lower .95"],
+    hi = mod$conf.int[1, "upper .95"]
+  )
+
+  out[1, 2] <- fn(evalc["E-values", 1], dig = 2)
+
+  return(out)
+}
+
+
+out1 <- evaluefunc(
+  time = outvars$time[1],
+  event = outvars$var[1],
+  eventname = outvars$name[1]
+)
+out2 <- evaluefunc(
+  time = outvars$time[2],
+  event = outvars$var[2],
+  eventname = outvars$name[2]
+)
+out3 <- evaluefunc(
+  time = outvars$time[3],
+  event = outvars$var[3],
+  eventname = outvars$name[3],
+  stratavar = "sos_com_hf",
+  col = 2
+)
+out4 <- evaluefunc(
+  time = outvars$time[4],
+  event = outvars$var[4],
+  eventname = outvars$name[4]
+)
+nr <- 5
+out5 <- evaluefunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 6
+out6 <- evaluefunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr]
+)
+nr <- 7
+out7 <- evaluefunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr],
+  stratavar = "sos_com_cancer3y"
+)
+nr <- 8
+out8 <- evaluefunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr],
+  col = 2
+)
+outall <- rbind(out1, out2, out3, out4, out5, out6, out7, out8)
+
+make_one_xlsxsheet(outall)
+
+default_kable(outall) %>%
+  column_spec(1, width = "6cm")
+```

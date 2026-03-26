@@ -126,8 +126,8 @@ catdig <- 0
 
 basetabfuncmed <- function(data, strata2, strataname, novars = NULL) {
   tab <- data %>%
-    group_by(!!sym(strata2)) %>%
-    count(case, .drop = F) %>%
+    group_by(case) %>%
+    count(!!sym(strata2), .drop = F) %>%
     mutate(n = paste0(n, " (", fn(n / sum(n) * 100, catdig), ")")) %>%
     ungroup() %>%
     pivot_wider(names_from = c(case, !!sym(strata2)), values_from = n) %>%
@@ -249,7 +249,7 @@ basetabfuncmed(data = sdata, strata2 = "sos_lm_rasiarni", strataname = "RASi/ARN
 #| tbl-cap: "Baseline characteristics - Lipid lowering"
 #| tbl-pos: "H"
 
-basetabfuncmed(data = sdata, strata2 = "sos_lm_antikoagulantia", strataname = "Lipd lowering")
+basetabfuncmed(data = sdata, strata2 = "sos_lm_antikoagulantia", strataname = "Lipid lowering")
 ```
 
 ```{r}

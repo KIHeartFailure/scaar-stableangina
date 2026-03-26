@@ -8,7 +8,7 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
   levs <- levels(data %>% pull(!!sym(xvar)))
   nlevs <- length(levs)
 
-  nrows <- if_else(fg, 8, 6)
+  nrows <- if_else(fg, 9, 7)
   out <- data.frame(matrix(NA, ncol = 2 + nlevs, nrow = nrows))
   colnames(out) <- c("Outcome", "Model", levs)
 
@@ -117,14 +117,18 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
       fn(mod$coef[1, "p"], dig = 3, p = TRUE)
     )
   )
-  ## 6 row - adjusted regression w timedependent meds
-  out[6, 2] <- "Adjusted (age, sex, region, comorbidities, medications, socioeconomics with timedependent medications) Hazard Ratio (95% CI), p-value"
+
+  ## 6 row - adjusted regression
+  out[6, 2] <- "Adjusted (age, sex, region, comorbidities (excl. stroke, HF, CKD, AF), medications, socioeconomics) Hazard Ratio (95% CI), p-value"
+  ex <- str_detect(coxvars, c("sos_com_hf|sos_com_stroke|sos_com_ckd|sos_com_af"), negate = T)
+  tmpcoxvars <- coxvars[ex]
+
   mod <- summary(coxph(
     formula(paste0(
-      "Surv(starttime, stoptime, event == 'Yes') ~ ", xvar, "+",
-      paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)"
+      "Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+",
+      paste(tmpcoxvars, collapse = " + "), "+ frailty(lopnrcase)"
     )),
-    data = timedata
+    data = data
   ))
 
   out[6, 3:4] <- c(
@@ -137,13 +141,33 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
     )
   )
 
+  ## 7 row - adjusted regression w timedependent meds
+  out[7, 2] <- "Adjusted (age, sex, region, comorbidities, medications, socioeconomics with timedependent medications) Hazard Ratio (95% CI), p-value"
+  mod <- summary(coxph(
+    formula(paste0(
+      "Surv(starttime, stoptime, event == 'Yes') ~ ", xvar, "+",
+      paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
+    data = timedata
+  ))
+
+  out[7, 3:4] <- c(
+    "reference",
+    paste0(
+      fn(mod$conf.int[1, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[1, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[1, "upper .95"], dig = 2), "), ",
+      fn(mod$coef[1, "p"], dig = 3, p = TRUE)
+    )
+  )
+
   if (fg) {
-    out[7, 2] <- "Adjusted (age, sex, region) Sub-distributional Hazard Ratio (95% CI), p-value"
+    out[8, 2] <- "Adjusted (age, sex, region) Sub-distributional Hazard Ratio (95% CI), p-value"
     mod <- summary(coxph(formula(paste0("Surv(fgstart, fgstop, fgstatus) ~ ", xvar, " + cluster(lopnrcase)")),
       weight = fgwt, data = sdatafg_comp # ok since only main model and only main outcome
     ))
 
-    out[7, 3:4] <- c(
+    out[8, 3:4] <- c(
       "reference",
       paste0(
         fn(mod$conf.int[1, "exp(coef)"], dig = 2),
@@ -153,7 +177,7 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
       )
     )
 
-    out[8, 2] <- "Adjusted (age, sex, region, comorbidities, medications, socioeconomics) Sub-distributional Hazard Ratio (95% CI), p-value"
+    out[9, 2] <- "Adjusted (age, sex, region, comorbidities, medications, socioeconomics) Sub-distributional Hazard Ratio (95% CI), p-value"
     mod <- summary(coxph(
       formula(paste0(
         "Surv(fgstart, fgstop, fgstatus) ~ ", xvar, "+",
@@ -162,7 +186,7 @@ outcomesfunc_inner <- function(data, time, event, eventname, xvar = "case",
       weight = fgwt, data = sdatafg_comp # ok since only main model and only main outcome
     ))
 
-    out[8, 3:4] <- c(
+    out[9, 3:4] <- c(
       "reference",
       paste0(
         fn(mod$conf.int[1, "exp(coef)"], dig = 2),

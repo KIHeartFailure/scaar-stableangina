@@ -1,21 +1,21 @@
 ```{r}
-#| label: predictorsfunc
+#| label: predictorsfunccc
 #| cache: true
 #| cache.comments: false
 
-predictorsfunc <- function(time, event, xbreaks, novar = NULL, stratavar = NULL) {
+predictorsfunccc <- function(time, event, xbreaks, novar = NULL, stratavar = NULL) {
   coxvars <- setdiff(modvars_case, novar)
   coxvars[coxvars %in% stratavar] <- paste0("strata(", coxvars[coxvars %in% stratavar], ")")
 
-  mod <- summary(pool(with(impsdata, coxph(formula(paste0(
+  mod <- summary(coxph(formula(paste0(
     "Surv(", time, ",", event, " == 'Yes') ~ ", paste(coxvars, collapse = " + ")
-  ))))))
+  )), data = sdata))
 
   out <- tibble(
-    var = mod$term,
-    hr = exp(mod$estimate),
-    lci = exp(mod$estimate - global_z05 * mod$std.error),
-    uci = exp(mod$estimate + global_z05 * mod$std.error)
+    var = rownames(mod$coefficients),
+    hr = mod$conf.int[, "exp(coef)"],
+    lci = mod$conf.int[, "lower .95"],
+    uci = mod$conf.int[, "upper .95"]
   ) %>%
     mutate(
       hrprint = paste0(
@@ -24,7 +24,7 @@ predictorsfunc <- function(time, event, xbreaks, novar = NULL, stratavar = NULL)
         "-", fn(uci, dig = 2), ")"
       ),
       cols = factor(case_when(
-        mod$p.value >= 0.05 ~ 2,
+        mod$coefficients[, "Pr(>|z|)"] >= 0.05 ~ 2,
         hr >= 1 ~ 1,
         hr < 1 ~ 3
       )),
@@ -119,34 +119,34 @@ predictorsfunc <- function(time, event, xbreaks, novar = NULL, stratavar = NULL)
 ```
 
 ```{r}
-#| label: fig-predictors-comp
+#| label: fig-predictors-comp-compcase
 #| cache: true
 #| cache.comments: false
-#| dependson: predictorsfunc
-#| fig-cap: "Association between baseline characteristics and the composite outcome"
+#| dependson: predictorsfunccc
+#| fig-cap: "Association between baseline characteristics and the composite outcome - Complete case analyses"
 #| fig-width: 8
 #| fig-height: 8
 
-predictorsfunc(
+predictorsfunccc(
   time = outvars$time[1],
   event = outvars$var[1],
-  xbreaks = c(0.5, 1, 2, 4, 6, 8)
+  xbreaks = c(0.5, 1, 2, 4, 6, 10)
 )
 ```
 
 ```{r}
-#| label: fig-predictors-revasc
+#| label: fig-predictors-revasc-compcase
 #| cache: true
 #| cache.comments: false
-#| dependson: predictorsfunc
-#| fig-cap: "Association between baseline characteristics and revascularzation"
+#| dependson: predictorsfunccc
+#| fig-cap: "Association between baseline characteristics and revascularzation - Complete case analyses"
 #| fig-width: 8
 #| fig-height: 8
 
-predictorsfunc(
+predictorsfunccc(
   time = outvars$time[6],
   event = outvars$var[6],
-  xbreaks = c(0.2, 0.5, 1, 2, 4),
+  xbreaks = c(0.2, 0.5, 1, 3, 5),
   novar = "scaar_stenos"
 )
 ```

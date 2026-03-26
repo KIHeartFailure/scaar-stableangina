@@ -1,29 +1,11 @@
 ```{r}
-#| label: basetabfunc
+#| label: basetabfuncmed
 #| cache: true
 #| cache.comments: false
 
-basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
+basetabfuncmed_inner <- function(x, data, stratavar, catdig, contdig) {
   tmp <- data %>%
     filter(!is.na(!!sym(x)) & !is.na(!!sym(stratavar)))
-
-  if (str_detect(x, "scaar_")) {
-    pmis <- data %>%
-      filter(!is.na(!!sym(stratavar)) & case == "ANOCA") %>%
-      mutate(mis = factor(if_else(is.na(!!sym(x)), 1, 0), levels = 0:1)) %>%
-      count(mis, .drop = F) %>%
-      mutate(pmis = fn(n / sum(n) * 100, catdig)) %>%
-      filter(mis == "1") %>%
-      pull(pmis)
-  } else {
-    pmis <- data %>%
-      filter(!is.na(!!sym(stratavar))) %>%
-      mutate(mis = factor(if_else(is.na(!!sym(x)), 1, 0), levels = 0:1)) %>%
-      count(mis, .drop = F) %>%
-      mutate(pmis = fn(n / sum(n) * 100, catdig)) %>%
-      filter(mis == "1") %>%
-      pull(pmis)
-  }
 
   cl <- class(data %>% pull(!!sym(x)))
   if (cl %in% c("character", "factor")) {
@@ -69,7 +51,6 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
           var = x,
           p = p,
           p2 = p2,
-          pmis = pmis,
           level = NA
         )
     } else {
@@ -77,14 +58,12 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
         mutate(
           var = NA,
           p = NA,
-          p2 = NA,
-          pmis = NA
+          p2 = NA
         )
       out <- out %>% add_row(
         var = x,
         p = p,
         p2 = p2,
-        pmis = pmis,
         .before = 1
       )
     }
@@ -135,8 +114,7 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
       mutate(
         var = x,
         p = p,
-        p2 = p2,
-        pmis = pmis
+        p2 = p2
       )
   } else {
     stop("Unknown class in baseline table")
@@ -146,27 +124,39 @@ basetabfunc_inner <- function(x, data, stratavar, catdig, contdig) {
 contdig <- 0
 catdig <- 0
 
-basetabfunc <- function(data, novars = NULL) {
+basetabfuncmed <- function(data, strata2, strataname, novars = NULL) {
   tab <- data %>%
+    group_by(!!sym(strata2)) %>%
     count(case, .drop = F) %>%
     mutate(n = paste0(n, " (", fn(n / sum(n) * 100, catdig), ")")) %>%
-    pivot_wider(names_from = case, values_from = n) %>%
+    ungroup() %>%
+    pivot_wider(names_from = c(case, !!sym(strata2)), values_from = n) %>%
     mutate(
       var = "N (%)",
       level = NA,
-      p = NA,
+      p1 = NA,
+      p12 = NA,
       p2 = NA,
-      pmis = NA
+      p22 = NA
     ) %>%
-    select(var, level, pmis, levels(data %>% pull(case)), p, p2)
+    select(var, level, Comparator_No, Comparator_Yes, p1, p12, ANOCA_No, ANOCA_Yes, p2, p22)
 
-  tabvarstmp <- setdiff(tabvars, novars)
-  tabtmp <- sapply(tabvarstmp,
-    FUN = basetabfunc_inner, data = data,
-    stratavar = "case", catdig = catdig, contdig = contdig
+  levstrata <- levels(data %>% pull(case))
+  tabvarstmp <- setdiff(tabvars, c(strata2, novars))
+  tabtmp1 <- sapply(tabvarstmp,
+    FUN = basetabfuncmed_inner, data = data %>% filter(case == levstrata[1]),
+    stratavar = strata2, catdig = catdig, contdig = contdig
+  )
+  tabtmp2 <- sapply(tabvarstmp,
+    FUN = basetabfuncmed_inner, data = data %>% filter(case == levstrata[2]),
+    stratavar = strata2, catdig = catdig, contdig = contdig
   )
 
-  tabtmp <- bind_rows(tabtmp)
+  tabtmp1 <- bind_rows(tabtmp1)
+  tabtmp2 <- bind_rows(tabtmp2)
+  tabtmp <- bind_cols(tabtmp1, tabtmp2 %>% select(-var, -level)) %>%
+    select(var, level, everything())
+  names(tabtmp) <- names(tab)
   tab <- bind_rows(tab, tabtmp)
 
   tab <- tab %>%
@@ -194,46 +184,22 @@ basetabfunc <- function(data, novars = NULL) {
       Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income")
     )
 
-  # footnotes
-  tab <- tab %>%
-    mutate(
-      footnote1 = if_else(!is.na(var) & var %in% c(modvars, "scb_education", "scb_dispincome_cat", "scb_maritalstatus"), footnote_marker_alphabet(1, format = "latex"), ""),
-      footnote2 = if_else(!is.na(var) & var %in% modvars_case, footnote_marker_alphabet(2, format = "latex"), "")
-    ) %>%
-    unite(footnote, starts_with("footnote"), sep = "")
-
-  cn <- c("Variable", "Missing (%)", levels(data %>% pull(case)), "SD", "P-value")
-
-  footnotetext <- c(
-    "Included in adjusted regression models in the analyses comparing ANOCA and the comparator.",
-    "Included in imputation and regression models in the ANOCA cases only analyses."
-  )
+  cn <- c("Variable", rep(c(paste("No", strataname), strataname, "SD", "P-value"), 2))
 
   # excel
-  tab_xls <- tab %>%
-    mutate(
-      Variable = paste0(Variable, footnote),
-      Variable = str_remove_all(Variable, "textsuperscript|\\}|\\{"),
-      Variable = str_replace_all(Variable, "\\\\", " ")
-    ) %>%
-    select(Variable, pmis:p2) %>%
-    add_row(Variable = "") %>%
-    add_row(Variable = paste0("a ", footnotetext[1])) %>%
-    add_row(Variable = paste0("b ", footnotetext[2]))
+  tab <- tab %>%
+    select(Variable, Comparator_No:p22)
 
-  make_one_xlsxsheet(tab_xls, colnames = cn)
+  make_one_xlsxsheet(tab, colnames = cn)
 
-  # footnotes
   tab <- tab %>%
     mutate(
       # so no probs
       Variable = sanitize_text(Variable),
-      Variable = paste0(Variable, footnote),
       Variable = str_replace_all(Variable, fixed("²"), "\\textsuperscript{2}"),
       Variable = str_replace_all(Variable, fixed("$>$="), "$\\geq$"),
       Variable = str_replace_all(Variable, fixed("$<$="), "$\\leq$")
-    ) %>%
-    select(Variable, pmis:p2)
+    )
 
   indent_rows <- tab %>%
     mutate(
@@ -252,37 +218,58 @@ basetabfunc <- function(data, novars = NULL) {
     col.names = cn
   ) %>%
     add_indent(indent_rows) %>%
-    # add_header_above(c(" " = 1, " " = 1, "Case" = 2, " " = 1, " " = 1)) %>%
+    add_header_above(c(" " = 1, "Comparator" = 4, "ANOCA" = 4)) %>%
     footnote(
       footnote_order = c("general", "symbol", "alphabet"),
       general_title = "",
       general = c(
         "Categorical variables are presented with n (%) and continuous variables with median [q1-q3]."
       ),
-      alphabet = footnotetext,
       threeparttable = T
     )
 }
 ```
 
 ```{r}
-#| label: tbl-base
+#| label: tbl-base-rasiarni
 #| cache: true
 #| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics"
+#| dependson: basetabfuncmed
+#| tbl-cap: "Baseline characteristics - RASi/ARNi"
 #| tbl-pos: "H"
 
-basetabfunc(data = sdata)
+basetabfuncmed(data = sdata, strata2 = "sos_lm_rasiarni", strataname = "RASi/ARNi")
 ```
 
 ```{r}
-#| label: tbl-base-yearexc20062010
+#| label: tbl-base-lipidlow
 #| cache: true
 #| cache.comments: false
-#| dependson: basetabfunc
-#| tbl-cap: "Baseline characteristics - Year of inclusion 2011-2019 (excluding 2006-2010, sensitivity analysis)"
+#| dependson: basetabfuncmed
+#| tbl-cap: "Baseline characteristics - Lipid lowering"
 #| tbl-pos: "H"
 
-basetabfunc(data = sdata %>% filter(year_cat != "2006-2010") %>% mutate(year_cat = droplevels(year_cat)))
+basetabfuncmed(data = sdata, strata2 = "sos_lm_antikoagulantia", strataname = "Lipd lowering")
+```
+
+```{r}
+#| label: tbl-base-bbl
+#| cache: true
+#| cache.comments: false
+#| dependson: basetabfuncmed
+#| tbl-cap: "Baseline characteristics - Beta-blockers"
+#| tbl-pos: "H"
+
+basetabfuncmed(data = sdata, strata2 = "sos_lm_bbl", strataname = "Beta-blockers")
+```
+
+```{r}
+#| label: tbl-base-ccb
+#| cache: true
+#| cache.comments: false
+#| dependson: basetabfuncmed
+#| tbl-cap: "Baseline characteristics - Calcium channel blockers"
+#| tbl-pos: "H"
+
+basetabfuncmed(data = sdata, strata2 = "sos_lm_ccb", strataname = "Calcium channel blockers")
 ```

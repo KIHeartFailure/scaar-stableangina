@@ -95,6 +95,7 @@ save(
   file = here("data/clean-data/sdata.RData"),
   list = c(
     "sdata",
+    "sdatami", 
     "impsdata",
     "sdatauseforimp",
     "sdatafg_comp",

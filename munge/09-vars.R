@@ -9,6 +9,8 @@ tabvars <- c(
   "scb_age_cat",
 
   # comorbs
+  "rs", 
+  "rs_cat", 
   "scaar_stenos",
   "scaar_smoke",
   "scaar_bmi",
@@ -51,7 +53,9 @@ tabvars_not_in_mod <- c(
   "scb_education",
   "scb_maritalstatus",
   "scaar_stenos",
-  "sos_com_diabetes"
+  "sos_com_diabetes",
+  "rs", 
+  "rs_cat"
 )
 
 modvars <- c(tabvars[!(tabvars %in% tabvars_not_in_mod)], "scb_educationimp", "scb_dispincomeimp_cat", "scb_maritalstatusimp")
@@ -60,7 +64,9 @@ tabvars_not_in_mod <- c(
   "year", "scb_age",
   "scaar_bmi",
   "sos_com_ckd",
-  "sos_com_diabetes"
+  "sos_com_diabetes",
+  "rs", 
+  "rs_cat"
 )
 
 modvars_case <- tabvars[!(tabvars %in% tabvars_not_in_mod)]
@@ -107,7 +113,8 @@ metavars <- bind_rows(
       "sos_lm_NOAK_waran",
       "sos_lm_antidiabetic",
       "scb_sex",
-      "scb_age"
+      "scb_age", 
+      "rs"
     ),
     label = c(
       "Year of intervention",
@@ -126,8 +133,9 @@ metavars <- bind_rows(
       "Anticoagulation",
       "Glucose lowering",
       "Sex",
-      "Age"
+      "Age", 
+      "No. of risk factors"
     ),
-    units = c(rep(NA, 2), "kg/m²", rep(NA, 13), "years")
+    units = c(rep(NA, 2), "kg/m²", rep(NA, 13), "years", NA)
   )
 )

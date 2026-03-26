@@ -1,0 +1,102 @@
+```{r}
+#| label: tbl-base-acs
+#| cache: true
+#| cache.comments: false
+#| dependson: basetabfunc
+#| tbl-cap: "Baseline characteristics - ACS"
+#| tbl-pos: "H"
+
+contdig <- 0
+catdig <- 0
+
+tab <- sdatami %>%
+  filter(case != "Comparator" | is.na(case)) %>%
+  count(sos_com_excl_angipci, .drop = F) %>%
+  mutate(n = paste0(n, " (", fn(n / sum(n) * 100, catdig), ")")) %>%
+  ungroup() %>%
+  pivot_wider(names_from = c(sos_com_excl_angipci), values_from = n) %>%
+  mutate(
+    var = "N (%)",
+    level = NA,
+    p = NA,
+    p2 = NA
+  ) %>%
+  select(var, level, No, Yes, p, p2)
+
+levstrata <- levels(sdatami %>% pull(sos_com_excl_angipci))
+tabtmp <- sapply(tabvars,
+  FUN = basetabfunc_inner, data = sdatami %>% filter(case != "Comparator" | is.na(case)),
+  stratavar = "sos_com_excl_angipci", catdig = catdig, contdig = contdig
+)
+tabtmp <- bind_rows(tabtmp)
+
+tab <- bind_rows(tab, tabtmp)
+
+tab <- tab %>%
+  mutate(
+    # if recoding or categorizing will still get org label
+    var_tmp = str_replace_all(var, "(_cat2|_cat)", "")
+  )
+
+tab <- left_join(tab,
+  metavars %>%
+    select(variable, label, unit),
+  by = c("var_tmp" = "variable")
+) %>%
+  mutate(
+    Variable = coalesce(label, var_tmp),
+    Variable = if_else(!is.na(unit),
+      paste0(Variable, " (", unit, ")"),
+      Variable
+    ),
+    Variable = if_else(!is.na(level) & !is.na(Variable),
+      paste0(Variable, " ", level),
+      coalesce(Variable, paste0("  ", level))
+    ),
+    # small fixes
+    Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income")
+  )
+
+cn <- c("Variable", "Included", "Excluded due to MI", "SD", "P-value")
+
+# excel
+tab <- tab %>%
+  select(Variable, No:p2)
+
+make_one_xlsxsheet(tab, colnames = cn)
+
+tab <- tab %>%
+  mutate(
+    # so no probs
+    Variable = sanitize_text(Variable),
+    Variable = str_replace_all(Variable, fixed("²"), "\\textsuperscript{2}"),
+    Variable = str_replace_all(Variable, fixed("$>$="), "$\\geq$"),
+    Variable = str_replace_all(Variable, fixed("$<$="), "$\\leq$")
+  )
+
+indent_rows <- tab %>%
+  mutate(
+    indent_rows = str_detect(Variable, "  "),
+    rows = row_number()
+  ) %>%
+  filter(indent_rows) %>%
+  pull(rows)
+
+cn <- sanitize_text(cn)
+
+default_kable(tab,
+  font_size = 7.5,
+  longtable = TRUE,
+  escape = FALSE,
+  col.names = cn
+) %>%
+  add_indent(indent_rows) %>%
+  footnote(
+    footnote_order = c("general", "symbol", "alphabet"),
+    general_title = "",
+    general = c(
+      "Categorical variables are presented with n (%) and continuous variables with median [q1-q3]."
+    ),
+    threeparttable = T
+  )
+```

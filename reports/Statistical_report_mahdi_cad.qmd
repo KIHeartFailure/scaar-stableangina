@@ -166,8 +166,11 @@ in the model but itself not imputed since it contained no missing values.
 ## Baseline characteristics
 
 Baseline characteristics are presented by ANOCA/Comparator. 
-Categorical variables are presented with n and percentage and continuous variables with
-median [first quartile-third quartile]. Standardized differences were used to quantify the differences between groups. 
+
+Categorical variables are presented with n and percentage and tested for 
+differences between educational level with the chi-square test. 
+Continuous variables are presented with median [first quartile-third quartile] and tested for 
+differences between educational level with the Kruskal-Wallis test. Standardized differences were used to quantify the differences between groups. 
 
 ## Outcomes
 
@@ -196,6 +199,8 @@ Further, as a consistency analysis, lipid lowering, glucose lowering, anticoagul
 
 As a consistency analysis for the primary outcome, a sub-distributional hazards model[@fg] was used, 
 where deaths not defined as an event were treated as competing events.
+
+Subgroup analyses were also performed for the fully adjusted model by lipid lowering medication, glucose lowering medication, heart failure, stroke and number of risk factors. The risk factors considered were hypertension, glucose lowering medication, lipid lowering medication, CKD and COPD. In the risk factor subgroup analyses the individual risk factor components were not included in the model. 
 
 ### Association between outcomes and basline characteristics for ANOCA only
 
@@ -235,6 +240,14 @@ The median (q1-q3) age is `r med` and `r percfem`% females.
 ## Baseline characteristics
 
 {{< include src/basetab.qmd >}}
+
+\clearpage
+
+\blandscape
+
+{{< include src/basetab_meds.qmd >}}
+
+\elandscape
 
 \clearpage
 
@@ -278,6 +291,10 @@ The median (min-max) follow-up is
 
 \clearpage
 
+{{< include src/outcomes_subgroup.qmd >}}
+
+\clearpage
+
 {{< include src/kmfigs.qmd >}}
 
 \clearpage
@@ -300,6 +317,22 @@ outcome.
 ## Association between primary outcome and baseline characteristics for ANOCA only
 
 {{< include src/predictors.qmd >}}
+
+\clearpage
+
+{{< include src/predictors_compcase.qmd >}}
+
+\clearpage
+
+## Baseline characteristics - comparison with patients with ACS
+
+{{< include src/basetab_acs.qmd >}}
+
+\clearpage
+
+## Association between outcomes and patients with/without ACS
+
+{{< include src/outcomes_acs.qmd >}}
 
 \clearpage
 

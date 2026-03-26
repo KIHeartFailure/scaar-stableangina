@@ -1,0 +1,307 @@
+```{r}
+#| label: outcomesfuncsub
+#| cache: true
+#| cache.comments: false
+
+outcomesfuncsub_inner <- function(time, event, eventname,
+                                  subvar, subnames = NULL, novar = NULL, stratavar) {
+  levs <- levels(sdata %>% pull(!!sym(subvar)))
+  nlevs <- length(levs)
+
+  out <- data.frame(matrix(NA, ncol = 5, nrow = nlevs))
+  colnames(out) <- c("strata", "est", "lci", "uci", "p")
+
+  if (is.null(subnames)) {
+    out[, 1] <- levs
+  } else {
+    out[, 1] <- subnames
+  }
+
+  coxvars <- setdiff(modvars, c(subvar, novar))
+  coxvars[coxvars %in% stratavar] <- paste0("strata(", coxvars[coxvars %in% stratavar], ")")
+
+  for (i in seq_along(levs)) {
+    mod <- summary(coxph(
+      formula(paste0(
+        "Surv(", time, ",", event, "== 'Yes') ~ case + ",
+        paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)"
+      )),
+      data = sdata %>% filter(!!sym(subvar) == levs[i])
+    ))
+
+    out[i, 2] <- mod$conf.int[1, "exp(coef)"]
+    out[i, 3] <- mod$conf.int[1, "lower .95"]
+    out[i, 4] <- mod$conf.int[1, "upper .95"]
+    out[i, 5] <- mod$coef[1, "p"]
+  }
+
+  return(out)
+}
+
+outcomesfuncsub <- function(time, event, eventname, stratavar = NULL, xbreaks = c(.5, 0.75, 1, 1.5, 2)) {
+  out1 <- outcomesfuncsub_inner(
+    time = time,
+    event = event,
+    eventname = eventname,
+    subvar = "scb_sex",
+    stratavar = stratavar
+  )
+  out2 <- outcomesfuncsub_inner(
+    time = time,
+    event = event,
+    eventname = eventname,
+    subvar = "scb_age_cat",
+    subnames = paste0(levels(sdata$scb_age_cat), " years"),
+    stratavar = stratavar
+  )
+  out3 <- outcomesfuncsub_inner(
+    time = time,
+    event = event,
+    eventname = eventname,
+    subvar = "sos_com_hf",
+    subnames = c("No heart failure", "Heart failure"),
+    stratavar = stratavar
+  )
+  out4 <- outcomesfuncsub_inner(
+    time = time,
+    event = event,
+    eventname = eventname,
+    subvar = "sos_com_stroke",
+    subnames = c("No stroke", "Stroke"),
+    stratavar = stratavar
+  )
+  out5 <- outcomesfuncsub_inner(
+    time = time,
+    event = event,
+    eventname = eventname,
+    subvar = "sos_lm_antidiabetic",
+    subnames = c("No glucose lowering", "Glucose lowering"),
+    stratavar = stratavar
+  )
+  out6 <- outcomesfuncsub_inner(
+    time = time,
+    event = event,
+    eventname = eventname,
+    subvar = "sos_lm_antikoagulantia",
+    subnames = c("No lipid lowering", "Lipid lowering"),
+    stratavar = stratavar
+  )
+  out7 <- outcomesfuncsub_inner(
+    time = time,
+    event = event,
+    eventname = eventname,
+    subvar = "rs_cat",
+    subnames = paste0(levels(sdata$rs_cat), " risk factors"),
+    novar = c("sos_com_hypertension", "sos_lm_antidiabetic", "sos_com_ckd", "sos_com_copd", "sos_lm_antikoagulantia"),
+    stratavar = stratavar
+  )
+
+  out <- bind_rows(out1, out2, out3, out4, out5, out6, out7)
+
+  out <- out %>%
+    mutate(
+      hrprint = paste0(
+        fn(est, dig = 2),
+        " (", fn(lci, dig = 2),
+        "-", fn(uci, dig = 2), ")"
+      ),
+      cols = case_when(
+        p >= 0.05 ~ global_cols[3],
+        est >= 1 ~ global_cols[2],
+        est < 1 ~ global_cols[1]
+      ),
+      strata = forcats::fct_rev(forcats::fct_inorder(strata))
+    )
+
+  # plot it
+  size_use <- 14
+
+  p <- ggplot(out, aes(x = est, y = strata)) +
+    # Add a reference dashed line at 1
+    geom_vline(xintercept = 1, linetype = "dashed", color = "grey", linewidth = 0.6) +
+    # Add dot plot and error bars
+    geom_errorbar(aes(xmin = lci, xmax = uci), width = 0, linewidth = 1, color = out$cols) +
+    geom_point(size = 2.5, shape = 15, color = out$cols) +
+    # scale_color_manual(values = global_cols[out$cols]) +
+    theme_classic() +
+    theme(
+      text = element_text(size = size_use, face = "bold"),
+      legend.position = "none",
+      axis.ticks.y = element_blank(),
+      axis.title.y = element_blank(),
+      # axis.text.y = element_blank(),
+      axis.line.y = element_line(colour = "white"),
+      plot.margin = unit(c(0, 0, 0, 0), "mm"),
+      axis.text = element_text(color = "black"),
+      panel.grid.major.y = element_line(colour = "grey94"),
+      plot.title = element_text(hjust = 0.5, size = size_use)
+    ) +
+    scale_x_continuous(trans = "log", breaks = xbreaks, limits = c(min(xbreaks), max(xbreaks))) +
+    labs(x = "Adjusted Hazard Ratio (95% CI)") +
+    ggtitle("Better - Worse\noutcome")
+
+  t <- ggplot(out) +
+    geom_text(aes(y = strata, x = 1, label = hrprint), size = size_use / .pt * 0.8, fontface = "bold") +
+    theme_classic() +
+    ggtitle("Adjusted\nHR (95% CI)") +
+    theme(
+      text = element_text(size = size_use, face = "bold"),
+      legend.position = "none",
+      axis.ticks.y = element_blank(),
+      axis.title = element_blank(),
+      axis.text.y = element_blank(),
+      axis.line.y = element_line(colour = "white"),
+      plot.margin = unit(c(0, 0, 0, 0), "mm"),
+      axis.line.x = element_line(color = "white"),
+      axis.ticks.x = element_line(color = "white"),
+      axis.text.x = element_text(color = "white"),
+      plot.title = element_text(hjust = 0.5, size = size_use)
+    )
+
+  pall <- p + t + plot_layout(ncol = 2, nrow = 1, widths = c(3, 1.9))
+
+  create_pptx(pall, width = 8, height = 8)
+  pall
+}
+```
+
+```{r}
+#| label: fig-outcomessub-composite
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - Composite"
+#| fig-width: 8
+#| fig-height: 8
+
+outcomesfuncsub(
+  time = outvars$time[1],
+  event = outvars$var[1],
+  eventname = outvars$name[1]
+)
+```
+
+```{r}
+#| label: fig-outcomessub-cvd
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - CV Death"
+#| fig-width: 8
+#| fig-height: 8
+
+outcomesfuncsub(
+  time = outvars$time[2],
+  event = outvars$var[2],
+  eventname = outvars$name[2],
+  xbreaks = c(0.2, 0.5, 1, 3, 6)
+)
+```
+
+```{r}
+#| label: fig-outcomessub-hfh
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - HF hospitalization"
+#| fig-width: 8
+#| fig-height: 8
+
+outcomesfuncsub(
+  time = outvars$time[3],
+  event = outvars$var[3],
+  eventname = outvars$name[3],
+  stratavar = "sos_com_hf",
+  xbreaks = c(0.5, 1, 2, 5)
+)
+```
+
+```{r}
+#| label: fig-outcomessub-mi
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - MI"
+#| fig-width: 8
+#| fig-height: 8
+
+outcomesfuncsub(
+  time = outvars$time[4],
+  event = outvars$var[4],
+  eventname = outvars$name[4],
+  xbreaks = c(0.1, 0.3, 0.5, 1, 2, 4)
+)
+```
+
+```{r}
+#| label: fig-outcomessub-stroke
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - Stroke"
+#| fig-width: 8
+#| fig-height: 8
+
+nr <- 5
+outcomesfuncsub(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr],
+  xbreaks = c(0.25, 0.5, 1, 2.5)
+)
+```
+
+```{r}
+#| label: fig-outcomessub-revas
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - Revascularization"
+#| fig-width: 8
+#| fig-height: 8
+
+nr <- 6
+outcomesfuncsub(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr],
+  xbreaks = c(0.25, 0.5, 1, 2, 4)
+)
+```
+
+```{r}
+#| label: fig-outcomessub-death
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - Death"
+#| fig-width: 8
+#| fig-height: 8
+
+nr <- 7
+outcomesfuncsub(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr],
+  stratavar = "sos_com_cancer3y",
+  xbreaks = c(0.3, 0.5, 1, 1.5, 3)
+)
+```
+
+```{r}
+#| label: fig-outcomessub-ca
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfuncsub
+#| fig-cap: "Association between outcomes and ANOCA/Comparator subgroups - Coronary angiography"
+#| fig-width: 8
+#| fig-height: 8
+
+nr <- 8
+outcomesfuncsub(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$name[nr],
+  xbreaks = c(0.8, 1, 2.5, 5, 10, 21)
+)
+```

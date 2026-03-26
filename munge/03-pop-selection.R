@@ -104,20 +104,36 @@ sdata <- create_sosvar(
   warnings = TRUE
 )
 
+sdata <- create_sosvar(
+  sosdata = patreg,
+  cohortdata = sdata,
+  patid = lopnr,
+  indexdate = indexdtm,
+  sosdate = INDATUM,
+  diavar = DIA_all,
+  opvar = OP_all,
+  type = "com",
+  name = "excl_angipcinomi",
+  opkod = " FNA| FNB| FNC| FND| FNE| FNF| FNG| FNH",
+  diakod = " I012| I090| I40| I41| I423| I514",
+  valsclass = "fac",
+  warnings = TRUE
+)
+
 rm(metaout)
 sdata <- sdata %>%
-  filter(sos_com_excl_angipci == "No") %>%
-  select(-sos_com_excl_angipci)
+  filter(sos_com_excl_angipcinomi == "No") %>%
+  select(-sos_com_excl_angipcinomi)
 flow <- add_row(flow,
   criteria = paste0("No previous or within first ", global_indexplus, " days STEMI/NSTEMI/IAP/MI/Myocarditis (KVÅ: FNA-H, ICD-10: I21-2, I200, I012, I090, I40-1, I423, I514)"),
-  n = nrow(sdata)
+  n = nrow(sdata %>% filter(sos_com_excl_angipci == "No"))
 )
 
 sdata <- sdata %>%
   filter(year >= d_yob + 18)
 flow <- add_row(flow,
   criteria = ">= 18 years of age",
-  n = nrow(sdata)
+  n = nrow(sdata %>% filter(sos_com_excl_angipci == "No"))
 )
 
 # emigration
@@ -152,7 +168,7 @@ sdata <- left_join(
 
 flow <- add_row(flow,
   criteria = "Exist in Total Population Register",
-  n = nrow(sdata)
+  n = nrow(sdata %>% filter(sos_com_excl_angipci == "No"))
 )
 
 sdata <- sdata %>%
@@ -163,5 +179,5 @@ sdata <- sdata %>%
 
 flow <- add_row(flow,
   criteria = paste0("Alive, not emigrated and with fu > ", global_indexplus, " days after intervention"),
-  n = nrow(sdata)
+  n = nrow(sdata %>% filter(sos_com_excl_angipci == "No"))
 )

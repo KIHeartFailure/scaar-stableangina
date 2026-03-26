@@ -27,12 +27,13 @@ sdata <- sdata %>%
     scb_age = year(indexdtm) - birthyear,
     scb_age_cat = factor(
       case_when(
-        scb_age < 65 ~ 1,
-        scb_age <= 80 ~ 2,
-        scb_age > 80 ~ 3,
+        scb_age < 55 ~ 1,
+        scb_age < 65 ~ 2,
+        scb_age <= 80 ~ 3,
+        scb_age > 80 ~ 4,
       ),
-      levels = 1:3,
-      labels = c("<65", "65-80", ">80")
+      levels = 1:4,
+      labels = c("<55", "55-64", "65-80", ">80")
     ),
     scb_sex = factor(Kon, levels = 1:2, labels = c("Male", "Female")),
     year = scbyear + 1,
@@ -75,6 +76,15 @@ sdata <- sdata %>%
     sos_out_comp_cr = factor(create_crevent(sos_out_comp, sos_out_death, eventvalues = c("Yes", "Yes")),
       levels = 0:2, labels = c("cens", "comp", "death")
     ),
+    rs = rowSums(select(., sos_com_hypertension, sos_lm_antidiabetic, sos_com_ckd, sos_com_copd, sos_lm_antikoagulantia) == "Yes"),
+    rs_cat = factor(
+      case_when(
+        rs > 3 ~ 3,
+        TRUE ~ rs
+      ),
+      level = 0:3,
+      label = c("0", "1", "2", "3+")
+    )
   )
 
 # income
@@ -174,7 +184,5 @@ for (i in seq_along(modvars)) {
 sdata <- sdata %>%
   mutate(across(where(is_character), factor))
 
-## Create numeric variables needed for comp risk model
-# for (i in seq_along(c("case", modvars))) {
-#  sdata <- create_crvar(sdata, c("case", modvars)[i])
-# }
+sdatami <- sdata
+sdata <- sdata %>% filter(is.na(sos_com_excl_angipci) | sos_com_excl_angipci == "No")

@@ -1,3 +1,6 @@
+sdatami <- sdata
+sdata <- sdata %>% filter(sos_com_excl_angipci == "No")
+
 kontroller2 <- kontroller %>%
   select(LopNrKontroll, FoddAr, Kon) %>%
   rename(lopnr = LopNrKontroll)
@@ -125,4 +128,9 @@ sdata <- sdata %>%
 flow <- add_row(flow,
   criteria = paste0("1-2 matched controls"),
   n = nrow(sdata %>% filter(case == "ANOCA"))
+)
+
+sdata <- bind_rows(
+  sdata,
+  sdatami %>% filter(sos_com_excl_angipci == "Yes")
 )

@@ -25,7 +25,7 @@ lmsel <- inner_join(
 accept_limit <- 153
 
 medtimefunc_inner <- function(atc, medname, outcome) {
-  medname <- paste0("sos_lm_", medname)
+  medname <- paste0("sos_med_", medname)
 
   tmp_sdata <- sdata %>%
     mutate(enddtm = indexdtm + !!sym(outcome)) %>%
@@ -143,7 +143,7 @@ medtimefunc_inner <- function(atc, medname, outcome) {
 }
 
 medtimefunc_fixtime <- function(meddata, medname, meddataall = tmp_meddata_all2) {
-  medname <- paste0("sos_lm_", medname)
+  medname <- paste0("sos_med_", medname)
   meddata <- full_join(meddataall,
     meddata %>% select(-stopdtm),
     by = c("lopnr", "case", "startdtm")
@@ -274,10 +274,10 @@ medtimefunc <- function(outcome, event) {
     ) %>%
     arrange(lopnr, case, startdtm, desc(stopdtm))
 
-  timemedvars <- names(tmp_meddata_all3)[str_detect(names(tmp_meddata_all3), "sos_lm_")]
+  timemedvars <- names(tmp_meddata_all3)[str_detect(names(tmp_meddata_all3), "sos_med_")]
   medtimedata <- full_join(
     tmp_meddata_all3 %>%
-      mutate(across(starts_with("sos_lm"), ynfac)),
+      mutate(across(starts_with("sos_med"), ynfac)),
     sdata %>%
       select(-contains(timemedvars)),
     by = c("lopnr", "case")

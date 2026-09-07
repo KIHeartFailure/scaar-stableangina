@@ -27,13 +27,12 @@ sdata <- sdata %>%
     scb_age = year(indexdtm) - birthyear,
     scb_age_cat = factor(
       case_when(
-        scb_age < 55 ~ 1,
-        scb_age < 65 ~ 2,
-        scb_age <= 80 ~ 3,
-        scb_age > 80 ~ 4,
+        scb_age < 60 ~ 1,
+        scb_age <= 75 ~ 2,
+        scb_age > 75 ~ 3
       ),
-      levels = 1:4,
-      labels = c("<55", "55-64", "65-80", ">80")
+      levels = 1:3,
+      labels = c("<60", "60-75", ">75")
     ),
     scb_sex = factor(Kon, levels = 1:2, labels = c("Male", "Female")),
     year = scbyear + 1,
@@ -61,7 +60,7 @@ sdata <- sdata %>%
     ),
     scaar_css = factor(scaar_css, levels = 1:2, labels = c("1", ">=2")),
     sos_com_hypertension = case_when(
-      sos_com_hf == "No" & (sos_lm_rasiarni == "Yes" | sos_lm_ccb == "Yes") ~ "Yes",
+      sos_med_rasiarni == "Yes" | sos_med_ccb == "Yes" ~ "Yes",
       TRUE ~ sos_com_hypertension
     ),
     sos_out_comp = if_else(sos_out_deathcv == "Yes" |
@@ -76,14 +75,14 @@ sdata <- sdata %>%
     sos_out_comp_cr = factor(create_crevent(sos_out_comp, sos_out_death, eventvalues = c("Yes", "Yes")),
       levels = 0:2, labels = c("cens", "comp", "death")
     ),
-    rs = rowSums(select(., sos_com_hypertension, sos_lm_antidiabetic, sos_com_ckd, sos_com_copd, sos_lm_antikoagulantia) == "Yes"),
+    rs = rowSums(select(., sos_com_hypertension, sos_med_antidiabetic, sos_com_copd, sos_med_antikoagulantia) == "Yes"),
     rs_cat = factor(
       case_when(
-        rs > 3 ~ 3,
+        rs > 2 ~ 2,
         TRUE ~ rs
       ),
-      level = 0:3,
-      label = c("0", "1", "2", "3+")
+      level = 0:2,
+      label = c("0", "1", "2+")
     )
   )
 
@@ -183,6 +182,3 @@ for (i in seq_along(modvars)) {
 
 sdata <- sdata %>%
   mutate(across(where(is_character), factor))
-
-sdatami <- sdata
-sdata <- sdata %>% filter(is.na(sos_com_excl_angipci) | sos_com_excl_angipci == "No")

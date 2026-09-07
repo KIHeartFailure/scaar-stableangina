@@ -1,0 +1,134 @@
+```{r}
+#| label: fig-outcomesforest
+#| cache: true
+#| cache.comments: false
+#| fig-cap: "Association between outcomes and ANOCA/Comparator"
+#| fig-width: 8
+#| fig-height: 8
+
+outcomesforestfunc_inner <- function(time, event, eventname, xvar = "case",
+                                     stratavar = NULL) {
+  crudemod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ ", xvar, " + frailty(lopnrcase)")),
+    data = sdata
+  ))
+
+  coxvars <- modvars
+  coxvars[coxvars %in% stratavar] <- paste0("strata(", coxvars[coxvars %in% stratavar], ")")
+
+  adjmod <- summary(coxph(
+    formula(paste0(
+      "Surv(", time, ",", event, "== 'Yes') ~ ", xvar, "+",
+      paste(coxvars, collapse = " + "), "+ frailty(lopnrcase)"
+    )),
+    data = sdata
+  ))
+
+  out <- tibble(
+    Outcome = eventname,
+    hr_c = crudemod$conf.int[1, "exp(coef)"],
+    hr_a = adjmod$conf.int[1, "exp(coef)"],
+    lci_c = crudemod$conf.int[1, "lower .95"],
+    lci_a = adjmod$conf.int[1, "lower .95"],
+    uci_c = crudemod$conf.int[1, "upper .95"],
+    uci_a = adjmod$conf.int[1, "upper .95"]
+  )
+  return(out)
+}
+
+out1 <- outcomesforestfunc_inner(
+  time = outvars$time[1],
+  event = outvars$var[1],
+  eventname = outvars$shortname[1]
+)
+out2 <- outcomesforestfunc_inner(
+  time = outvars$time[2],
+  event = outvars$var[2],
+  eventname = outvars$shortname[2]
+)
+out3 <- outcomesforestfunc_inner(
+  time = outvars$time[3],
+  event = outvars$var[3],
+  eventname = outvars$shortname[3]
+)
+out4 <- outcomesforestfunc_inner(
+  time = outvars$time[4],
+  event = outvars$var[4],
+  eventname = outvars$shortname[4]
+)
+nr <- 5
+out5 <- outcomesforestfunc_inner(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 6
+out6 <- outcomesforestfunc_inner(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 7
+out7 <- outcomesforestfunc_inner(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  stratavar = "sos_com_cancer3y"
+)
+nr <- 8
+out8 <- outcomesforestfunc_inner(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+plotdata <- rbind(out1, out2, out3, out4, out5, out6, out7, out8) %>%
+  mutate(
+    `Crude\nHR (95% CI)` = paste0(
+      fn(hr_c, dig = 2),
+      " (", fn(lci_c, dig = 2),
+      "-", fn(uci_c, dig = 2), ")"
+    ),
+    `Adjusted\nHR (95% CI)` = paste0(
+      fn(hr_a, dig = 2),
+      " (", fn(lci_a, dig = 2),
+      "-", fn(uci_a, dig = 2), ")"
+    )
+  )
+
+plotdata$` ` <- paste(rep(" ", nrow(plotdata)), collapse = " ")
+
+tm <- forest_theme(
+  core = list(bg_params = list(fill = c("#F0F0F0", "white"))),
+  base_size = 14,
+  refline_gp = gpar(lty = "solid"),
+  ci_col = global_cols[1:2],
+  ci_lwd = 2.5,
+  legend_name = NULL,
+  legend_position = "bottom",
+  arrow_length = 0.08,
+  # xaxis_ticks_gp = gpar(fontface = "bold"),
+  #  arrow_gp = gpar(fontface = "bold"),
+  legend_value = c("Crude", "Adjusted")
+  # legend_gp = gpar(cex = 0.65, fontsize = 14)
+) # ,
+# Table cell padding, width 4 and heights 3
+# core = list(padding = unit(c(4, 3), "mm")))
+
+# Draw the forest plot with rearranged columns
+p <- forest(plotdata[, c(1, 10, 8, 9)],
+  est = list(plotdata$hr_c, plotdata$hr_a),
+  lower = list(plotdata$lci_c, plotdata$lci_a),
+  upper = list(plotdata$uci_c, plotdata$uci_a),
+  ci_column = 2,
+  sizes = 0.6,
+  nudge_y = 0.35,
+  x_trans = "log",
+  arrow_lab = c("Better", "Worse"),
+  xlim = c(0.3, 6),
+  ticks_at = c(0.3, 1, 6),
+  theme = tm
+)
+# p <- edit_plot(p, gp = gpar(fontface = "bold"))
+
+create_pptx(p, width = 8, height = 8, forestp = T)
+p
+```

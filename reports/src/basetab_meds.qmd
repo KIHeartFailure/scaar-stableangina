@@ -238,7 +238,7 @@ basetabfuncmed <- function(data, strata2, strataname, novars = NULL) {
 #| tbl-cap: "Baseline characteristics - RASi/ARNi"
 #| tbl-pos: "H"
 
-basetabfuncmed(data = sdata, strata2 = "sos_lm_rasiarni", strataname = "RASi/ARNi")
+basetabfuncmed(data = sdata, strata2 = "sos_med_rasiarni", strataname = "RASi/ARNi")
 ```
 
 ```{r}
@@ -249,7 +249,7 @@ basetabfuncmed(data = sdata, strata2 = "sos_lm_rasiarni", strataname = "RASi/ARN
 #| tbl-cap: "Baseline characteristics - Lipid lowering"
 #| tbl-pos: "H"
 
-basetabfuncmed(data = sdata, strata2 = "sos_lm_antikoagulantia", strataname = "Lipid lowering")
+basetabfuncmed(data = sdata, strata2 = "sos_med_antikoagulantia", strataname = "Lipid lowering")
 ```
 
 ```{r}
@@ -260,7 +260,7 @@ basetabfuncmed(data = sdata, strata2 = "sos_lm_antikoagulantia", strataname = "L
 #| tbl-cap: "Baseline characteristics - Beta-blockers"
 #| tbl-pos: "H"
 
-basetabfuncmed(data = sdata, strata2 = "sos_lm_bbl", strataname = "Beta-blockers")
+basetabfuncmed(data = sdata, strata2 = "sos_med_bbl", strataname = "Beta-blockers")
 ```
 
 ```{r}
@@ -271,5 +271,5 @@ basetabfuncmed(data = sdata, strata2 = "sos_lm_bbl", strataname = "Beta-blockers
 #| tbl-cap: "Baseline characteristics - Calcium channel blockers"
 #| tbl-pos: "H"
 
-basetabfuncmed(data = sdata, strata2 = "sos_lm_ccb", strataname = "Calcium channel blockers")
+basetabfuncmed(data = sdata, strata2 = "sos_med_ccb", strataname = "Calcium channel blockers")
 ```

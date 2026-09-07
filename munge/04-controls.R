@@ -1,6 +1,3 @@
-sdatami <- sdata
-sdata <- sdata %>% filter(sos_com_excl_angipci == "No")
-
 kontroller2 <- kontroller %>%
   select(LopNrKontroll, FoddAr, Kon) %>%
   rename(lopnr = LopNrKontroll)
@@ -16,8 +13,8 @@ patregkontroller <- left_join(
   by = c("lopnr")
 ) %>%
   mutate(
-    pcimm = str_detect(OP_all, " FNA| FNB| FNC| FND| FNE| FNF| FNG| FNH"),
-    mimm = str_detect(DIA_all, " I21| I22| I200| I012| I090| I40| I41| I423| I514")
+    pcimm = str_detect(OP_all, " FNA| FNB| FNC| FND| FNE| FNF| FNG| FNH| KAS00| KAS10| KAS20| DR014| DR015| DR016| DR020| DR012| DR013| DR023| DR024| TJA33| TJA35"),
+    mimm = str_detect(DIA_all, " I21| I22| I200| I012| I090| I40| I41| I423| I514| N18| N19| N26| Q61| Z49| Z992| Z940| I6[0-4]| I69[0-4]| I50| I110| I48")
   ) %>%
   filter(pcimm | mimm) %>%
   rename(casedtm = INDATUM) %>%
@@ -128,9 +125,4 @@ sdata <- sdata %>%
 flow <- add_row(flow,
   criteria = paste0("1-2 matched controls"),
   n = nrow(sdata %>% filter(case == "ANOCA"))
-)
-
-sdata <- bind_rows(
-  sdata,
-  sdatami %>% filter(sos_com_excl_angipci == "Yes")
 )

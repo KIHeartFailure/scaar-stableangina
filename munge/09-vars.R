@@ -9,31 +9,27 @@ tabvars <- c(
   "scb_age_cat",
 
   # comorbs
-  "rs", 
-  "rs_cat", 
+  "rs",
+  "rs_cat",
   "scaar_stenos",
   "scaar_smoke",
   "scaar_bmi",
   "scaar_bmi_cat",
-  "sos_com_hf",
   "sos_com_diabetes",
   "sos_com_hypertension",
-  "sos_com_stroke",
-  "sos_com_af",
   "sos_com_copd",
-  "sos_com_ckd",
   "scaar_css",
   "sos_com_cancer3y",
 
   # treatments
-  "sos_lm_rasiarni",
-  "sos_lm_bbl",
-  "sos_lm_diuretic",
-  "sos_lm_ccb",
-  "sos_lm_antikoagulantia",
-  "sos_lm_asap2y12i",
-  "sos_lm_NOAK_waran",
-  "sos_lm_antidiabetic",
+  "sos_med_rasiarni",
+  "sos_med_bbl",
+  "sos_med_diuretic",
+  "sos_med_ccb",
+  "sos_med_antikoagulantia",
+  "sos_med_asap2y12i",
+  "sos_med_NOAK_waran",
+  "sos_med_antidiabetic",
 
   # socec
   "scb_maritalstatus",
@@ -54,7 +50,7 @@ tabvars_not_in_mod <- c(
   "scb_maritalstatus",
   "scaar_stenos",
   "sos_com_diabetes",
-  "rs", 
+  "rs",
   "rs_cat"
 )
 
@@ -63,9 +59,8 @@ modvars <- c(tabvars[!(tabvars %in% tabvars_not_in_mod)], "scb_educationimp", "s
 tabvars_not_in_mod <- c(
   "year", "scb_age",
   "scaar_bmi",
-  "sos_com_ckd",
   "sos_com_diabetes",
-  "rs", 
+  "rs",
   "rs_cat"
 )
 
@@ -102,18 +97,16 @@ metavars <- bind_rows(
       "scaar_bmi",
       "scaar_css",
       "scaar_stenos",
-      "sos_com_hf",
-      "sos_com_ckd",
-      "sos_lm_rasiarni",
-      "sos_lm_bbl",
-      "sos_lm_diuretic",
-      "sos_lm_ccb",
-      "sos_lm_antikoagulantia",
-      "sos_lm_asap2y12i",
-      "sos_lm_NOAK_waran",
-      "sos_lm_antidiabetic",
+      "sos_med_rasiarni",
+      "sos_med_bbl",
+      "sos_med_diuretic",
+      "sos_med_ccb",
+      "sos_med_antikoagulantia",
+      "sos_med_asap2y12i",
+      "sos_med_NOAK_waran",
+      "sos_med_antidiabetic",
       "scb_sex",
-      "scb_age", 
+      "scb_age",
       "rs"
     ),
     label = c(
@@ -122,8 +115,6 @@ metavars <- bind_rows(
       "BMI",
       "CSS",
       "Degree of stenosis",
-      "Heart failure",
-      "CKD",
       "RASi/ARNi",
       "Beta-blockers",
       "Diuretics",
@@ -133,9 +124,9 @@ metavars <- bind_rows(
       "Anticoagulation",
       "Glucose lowering",
       "Sex",
-      "Age", 
+      "Age",
       "No. of risk factors"
     ),
-    units = c(rep(NA, 2), "kg/m²", rep(NA, 13), "years", NA)
+    units = c(rep(NA, 2), "kg/m²", rep(NA, 11), "years", NA)
   )
 )

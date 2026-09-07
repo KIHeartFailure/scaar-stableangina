@@ -15,23 +15,6 @@ sdata <- create_sosvar(
   valsclass = "fac",
   warnings = FALSE
 )
-
-sdata <- create_sosvar(
-  sosdata = patreg,
-  cohortdata = sdata,
-  patid = lopnr,
-  indexdate = indexdtm,
-  add_unique = case,
-  sosdate = INDATUM,
-  diavar = DIA_all,
-  type = "com",
-  name = "hf",
-  diakod = " I50| I110",
-  stoptime = -5 * 365.25,
-  valsclass = "fac",
-  warnings = FALSE
-)
-
 sdata <- create_sosvar(
   sosdata = patreg,
   cohortdata = sdata,
@@ -47,7 +30,6 @@ sdata <- create_sosvar(
   valsclass = "fac",
   warnings = FALSE
 )
-
 sdata <- create_sosvar(
   sosdata = patreg,
   cohortdata = sdata,
@@ -59,54 +41,6 @@ sdata <- create_sosvar(
   type = "com",
   name = "diabetes",
   diakod = " E1[0-4]",
-  stoptime = -5 * 365.25,
-  valsclass = "fac",
-  warnings = FALSE
-)
-
-sdata <- create_sosvar(
-  sosdata = patreg,
-  cohortdata = sdata,
-  patid = lopnr,
-  indexdate = indexdtm,
-  add_unique = case,
-  sosdate = INDATUM,
-  diavar = DIA_all,
-  type = "com",
-  name = "af",
-  diakod = " I48",
-  stoptime = -5 * 365.25,
-  valsclass = "fac",
-  warnings = FALSE
-)
-sdata <- create_sosvar(
-  sosdata = patreg,
-  cohortdata = sdata,
-  patid = lopnr,
-  indexdate = indexdtm,
-  add_unique = case,
-  sosdate = INDATUM,
-  diavar = DIA_all,
-  type = "com",
-  name = "stroke",
-  diakod = " I6[0-4]| I69[0-4]",
-  stoptime = -5 * 365.25,
-  valsclass = "fac",
-  warnings = FALSE
-)
-sdata <- create_sosvar(
-  sosdata = patreg,
-  cohortdata = sdata,
-  patid = lopnr,
-  indexdate = indexdtm,
-  add_unique = case,
-  sosdate = INDATUM,
-  diavar = DIA_all,
-  opvar = OP_all,
-  type = "com",
-  name = "ckd",
-  diakod = " N18| N19| N26| Q61| Z49| Z992| Z940",
-  opkod = " KAS00| KAS10| KAS20| DR014| DR015| DR016| DR020| DR012| DR013| DR023| DR024| TJA33| TJA35",
   stoptime = -5 * 365.25,
   valsclass = "fac",
   warnings = FALSE
@@ -141,7 +75,6 @@ sdata <- create_sosvar(
   valsclass = "fac",
   warnings = FALSE
 )
-
 sdata <- create_sosvar(
   sosdata = patreg,
   cohortdata = sdata,
@@ -157,7 +90,6 @@ sdata <- create_sosvar(
   valsclass = "fac",
   warnings = FALSE
 )
-
 sdata <- create_sosvar(
   sosdata = patreg,
   cohortdata = sdata,
